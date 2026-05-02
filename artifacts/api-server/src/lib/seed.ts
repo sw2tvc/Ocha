@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
-import { usersTable, cleanersTable, propertiesTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { usersTable, cleanersTable, propertiesTable, notificationsTable } from "@workspace/db";
+import { sql, eq } from "drizzle-orm";
 import { logger } from "./logger";
 
 export async function seedDemoData() {
@@ -201,5 +201,84 @@ export async function seedDemoData() {
     logger.info("Demo data seeded successfully.");
   } catch (err) {
     logger.error({ err }, "Failed to seed demo data");
+  }
+}
+
+export async function seedNotifications() {
+  try {
+    const existing = await db
+      .select()
+      .from(notificationsTable)
+      .where(eq(notificationsTable.userId, "user-demo-1"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    const now = Date.now();
+    await db.insert(notificationsTable).values([
+      {
+        id: "notif-1",
+        userId: "user-demo-1",
+        type: "review_revealed",
+        title: "Reviews are live!",
+        message: "Your review of James Adeyemi and his review of you have both been revealed.",
+        isRead: false,
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        createdAt: new Date(now - 10 * 60000),
+      },
+      {
+        id: "notif-2",
+        userId: "user-demo-1",
+        type: "booking_completed",
+        title: "Cleaning complete",
+        message: "James Adeyemi finished cleaning Hackney Family Home. Hope it went brilliantly!",
+        isRead: false,
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        createdAt: new Date(now - 2 * 3600000),
+      },
+      {
+        id: "notif-3",
+        userId: "user-demo-1",
+        type: "booking_en_route",
+        title: "James is on his way",
+        message: "James Adeyemi is en route to Hackney Family Home. ETA ~15 min.",
+        isRead: true,
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        createdAt: new Date(now - 5 * 3600000),
+      },
+      {
+        id: "notif-4",
+        userId: "user-demo-1",
+        type: "booking_accepted",
+        title: "Booking confirmed",
+        message: "James Adeyemi accepted your booking for Hackney Family Home on 20 Apr.",
+        isRead: true,
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        createdAt: new Date(now - 13 * 86400000),
+      },
+      {
+        id: "notif-5",
+        userId: "user-demo-1",
+        type: "trust_update",
+        title: "Trust score updated",
+        message: "Your Ocha trust score is now 87. Consistent bookings and reviews keep it growing.",
+        isRead: true,
+        bookingId: null,
+        createdAt: new Date(now - 14 * 86400000),
+      },
+      {
+        id: "notif-6",
+        userId: "user-demo-1",
+        type: "booking_accepted",
+        title: "Booking cancelled",
+        message: "Your booking with Amara Osei for Shoreditch Studio was cancelled.",
+        isRead: true,
+        bookingId: "115c1ea2-6466-4b07-84cb-335674323332",
+        createdAt: new Date(now - 15 * 86400000),
+      },
+    ]).onConflictDoNothing();
+
+    logger.info("Notifications seeded.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed notifications");
   }
 }
