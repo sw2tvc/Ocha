@@ -19,7 +19,9 @@ export function BottomNav() {
     {
       query: {
         queryKey: getListNotificationsQueryKey({}),
-        staleTime: 30000,
+        staleTime: 20_000,
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
       },
     }
   );
