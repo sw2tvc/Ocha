@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { usersTable, cleanersTable, propertiesTable, notificationsTable } from "@workspace/db";
+import { usersTable, cleanersTable, propertiesTable, notificationsTable, bookingsTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -280,5 +280,38 @@ export async function seedNotifications() {
     logger.info("Notifications seeded.");
   } catch (err) {
     logger.error({ err }, "Failed to seed notifications");
+  }
+}
+
+export async function seedEnRouteBooking() {
+  try {
+    const existing = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.id, "booking-enroute-1"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    /* scheduled ~40 min from now so ETA looks live */
+    const scheduledAt = new Date(Date.now() + 40 * 60000);
+
+    await db.insert(bookingsTable).values({
+      id: "booking-enroute-1",
+      customerId: "user-demo-1",
+      cleanerId: "cleaner-3",
+      propertyId: "prop-1",
+      serviceType: "deep_clean",
+      status: "en_route",
+      scheduledAt,
+      estimatedDurationHours: 3,
+      totalPrice: 72,
+      urgency: "standard",
+      notes: "Please focus on the bathroom and kitchen today.",
+      reviewStatus: "pending",
+    }).onConflictDoNothing();
+
+    logger.info("En-route demo booking seeded.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed en-route booking");
   }
 }

@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookingStatusPill, BookingTimeline } from "@/components/booking-status";
+import { LiveStatusCard } from "@/components/live-status-card";
 import { TrustBadge } from "@/components/trust-badge";
 import { Skeleton } from "@/components/skeleton-loader";
 import { MOCK_BOOKINGS } from "@/lib/mock-data";
@@ -30,8 +31,17 @@ export default function BookingDetail() {
   const queryClient = useQueryClient();
   const [cancelStep, setCancelStep] = useState<"idle" | "confirm">("idle");
 
+  const isLive = (s: string) => s === "en_route" || s === "in_progress";
+
   const { data: booking, isLoading, refetch } = useGetBooking(bookingId!, {
-    query: { enabled: !!bookingId, queryKey: getGetBookingQueryKey(bookingId!) },
+    query: {
+      enabled: !!bookingId,
+      queryKey: getGetBookingQueryKey(bookingId!),
+      refetchInterval: (query) => {
+        const s = (query.state.data as any)?.status as string | undefined;
+        return s && isLive(s) ? 15000 : false;
+      },
+    },
   });
 
   const cancelMutation = useCancelBooking();
@@ -109,13 +119,24 @@ export default function BookingDetail() {
           </div>
         ) : (
           <>
-            {/* Status timeline */}
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-4">Progress</p>
-              <div className="overflow-x-auto">
-                <BookingTimeline status={status as any} />
+            {/* Live status card for en_route / in_progress */}
+            {isLive(status) ? (
+              <LiveStatusCard
+                status={status as "en_route" | "in_progress"}
+                cleanerName={(b as any).cleaner?.fullName || "Your cleaner"}
+                cleanerAvatar={(b as any).cleaner?.avatarUrl}
+                scheduledAt={(b as any).scheduledAt}
+                estimatedDurationHours={(b as any).estimatedDurationHours || 3}
+              />
+            ) : (
+              /* Static timeline for all other statuses */
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-4">Progress</p>
+                <div className="overflow-x-auto">
+                  <BookingTimeline status={status as any} />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Cancellation reason banner */}
             {status === "cancelled" && (
