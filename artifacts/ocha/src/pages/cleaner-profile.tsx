@@ -281,6 +281,7 @@ interface CalDay { date: string; status: DayStatus }
 const MINI_DAY_HEADERS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function AvailabilityWidget({ cleanerId }: { cleanerId: string }) {
+  const [, setLocation] = useLocation();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -309,12 +310,21 @@ function AvailabilityWidget({ cleanerId }: { cleanerId: string }) {
 
   const monthLabel = new Date(year, month - 1, 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
 
-  const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const isPrevDisabled = year === now.getFullYear() && month <= now.getMonth() + 1;
+  const prevMonth = () => {
+    if (isPrevDisabled) return;
+    if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1);
+  };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const nextAvailable = data?.nextAvailable
     ? new Date(data.nextAvailable + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
     : null;
+
+  const handleDayTap = (day: CalDay) => {
+    if (day.status !== "available") return;
+    setLocation(`/book?cleanerId=${cleanerId}&date=${day.date}`);
+  };
 
   return (
     <div className="px-4 mb-6">
@@ -324,14 +334,23 @@ function AvailabilityWidget({ cleanerId }: { cleanerId: string }) {
           Availability
         </h2>
         {nextAvailable && (
-          <span className="text-[10px] text-primary font-medium">Next: {nextAvailable}</span>
+          <button
+            onClick={() => data?.nextAvailable && setLocation(`/book?cleanerId=${cleanerId}&date=${data.nextAvailable}`)}
+            className="text-[10px] text-primary font-semibold hover:underline"
+          >
+            Next free: {nextAvailable} →
+          </button>
         )}
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-3">
         {/* Month nav */}
         <div className="flex items-center justify-between mb-2.5">
-          <button onClick={prevMonth} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+          <button
+            onClick={prevMonth}
+            disabled={isPrevDisabled}
+            className={`w-6 h-6 rounded-full flex items-center justify-center ${isPrevDisabled ? "opacity-30" : "bg-muted"}`}
+          >
             <ChevronLeft size={12} />
           </button>
           <p className="text-xs font-semibold text-foreground">{monthLabel}</p>
@@ -357,30 +376,41 @@ function AvailabilityWidget({ cleanerId }: { cleanerId: string }) {
             {grid.map((day, i) => {
               if (!day) return <div key={`pad-${i}`} />;
               const dayNum = Number(day.date.split("-")[2]);
-              const colors: Record<DayStatus, string> = {
-                available: "bg-primary/10 text-primary",
-                blocked:   "bg-muted text-muted-foreground/40",
-                booked:    "bg-amber-50 text-amber-600",
-                past:      "text-muted-foreground/25",
+              const isAvailable = day.status === "available";
+              const styles: Record<DayStatus, string> = {
+                available: "bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground active:scale-95 cursor-pointer",
+                blocked:   "bg-muted text-muted-foreground/40 cursor-default",
+                booked:    "bg-amber-50 text-amber-500 cursor-default",
+                past:      "text-muted-foreground/25 cursor-default",
               };
               return (
-                <div
+                <button
                   key={day.date}
-                  className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium ${colors[day.status]}`}
+                  onClick={() => handleDayTap(day)}
+                  disabled={!isAvailable}
+                  className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium transition-all ${styles[day.status]}`}
+                  title={isAvailable ? `Book for ${day.date}` : undefined}
                 >
                   {dayNum}
-                </div>
+                </button>
               );
             })}
           </div>
         )}
 
+        {/* Tap hint */}
+        {!isLoading && days.some(d => d.status === "available") && (
+          <p className="text-[9px] text-primary/70 text-center mt-2 font-medium">
+            Tap an available date to book
+          </p>
+        )}
+
         {/* Legend */}
-        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border flex-wrap">
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border flex-wrap">
           {[
-            { dot: "bg-primary/50", label: "Available" },
+            { dot: "bg-primary/50", label: "Tap to book" },
             { dot: "bg-muted-foreground/30", label: "Unavailable" },
-            { dot: "bg-amber-400", label: "Booked" },
+            { dot: "bg-amber-300", label: "Already booked" },
           ].map((l) => (
             <div key={l.label} className="flex items-center gap-1">
               <div className={`w-2 h-2 rounded-sm ${l.dot}`} />
