@@ -1,0 +1,205 @@
+import { db } from "@workspace/db";
+import { usersTable, cleanersTable, propertiesTable } from "@workspace/db";
+import { sql } from "drizzle-orm";
+import { logger } from "./logger";
+
+export async function seedDemoData() {
+  try {
+    const existingCleaners = await db.execute(sql`SELECT COUNT(*) as count FROM cleaners`);
+    const count = Number((existingCleaners.rows[0] as any).count);
+    if (count > 0) return;
+
+    logger.info("Seeding demo data...");
+
+    await db.insert(usersTable).values([
+      {
+        id: "user-cleaner-1",
+        email: "amara@example.com",
+        fullName: "Amara Osei",
+        phone: "+44 7700 900456",
+        avatarUrl: "https://i.pravatar.cc/150?img=32",
+        role: "cleaner",
+        isVerified: true,
+        verificationBadge: "trusted",
+        trustScore: 96,
+      },
+      {
+        id: "user-cleaner-2",
+        email: "james@example.com",
+        fullName: "James Adeyemi",
+        phone: "+44 7700 900789",
+        avatarUrl: "https://i.pravatar.cc/150?img=68",
+        role: "cleaner",
+        isVerified: true,
+        verificationBadge: "verified",
+        trustScore: 91,
+      },
+      {
+        id: "user-cleaner-3",
+        email: "nadia@example.com",
+        fullName: "Nadia Kowalski",
+        phone: "+44 7700 900321",
+        avatarUrl: "https://i.pravatar.cc/150?img=56",
+        role: "cleaner",
+        isVerified: true,
+        verificationBadge: "trusted",
+        trustScore: 98,
+      },
+      {
+        id: "user-cleaner-4",
+        email: "marcus@example.com",
+        fullName: "Marcus Thompson",
+        phone: "+44 7700 900654",
+        avatarUrl: "https://i.pravatar.cc/150?img=12",
+        role: "cleaner",
+        isVerified: true,
+        verificationBadge: "verified",
+        trustScore: 88,
+      },
+    ]).onConflictDoNothing();
+
+    await db.insert(cleanersTable).values([
+      {
+        id: "cleaner-1",
+        userId: "user-cleaner-1",
+        bio: "5 years of professional cleaning experience. Specialising in Airbnb turnovers and deep cleans. Attention to detail is my signature.",
+        serviceTypes: ["standard", "deep_clean", "airbnb_turnover"],
+        hourlyRate: 22,
+        isAvailable: true,
+        isVerified: true,
+        verificationBadge: "trusted",
+        trustScore: 96,
+        repeatBookingRate: 84,
+        completionRate: 99,
+        responseTime: "< 15 min",
+        totalBookings: 412,
+        averageRating: 4.9,
+        reviewCount: 203,
+        wouldWorkAgainPct: 97,
+        cancellationRate: 1,
+        serviceRadius: 8,
+        locationLat: 51.515,
+        locationLng: -0.09,
+      },
+      {
+        id: "cleaner-2",
+        userId: "user-cleaner-2",
+        bio: "Reliable, professional and thorough. End of tenancy specialist with 7 years experience.",
+        serviceTypes: ["standard", "end_of_tenancy", "office"],
+        hourlyRate: 20,
+        isAvailable: true,
+        isVerified: true,
+        verificationBadge: "verified",
+        trustScore: 91,
+        repeatBookingRate: 76,
+        completionRate: 97,
+        responseTime: "< 30 min",
+        totalBookings: 287,
+        averageRating: 4.8,
+        reviewCount: 142,
+        wouldWorkAgainPct: 93,
+        cancellationRate: 3,
+        serviceRadius: 12,
+        locationLat: 51.52,
+        locationLng: -0.08,
+      },
+      {
+        id: "cleaner-3",
+        userId: "user-cleaner-3",
+        bio: "Methodical and meticulous. My clients book me for years, not once.",
+        serviceTypes: ["standard", "deep_clean", "recurring"],
+        hourlyRate: 24,
+        isAvailable: false,
+        isVerified: true,
+        verificationBadge: "trusted",
+        trustScore: 98,
+        repeatBookingRate: 91,
+        completionRate: 100,
+        responseTime: "< 1 hr",
+        totalBookings: 634,
+        averageRating: 5.0,
+        reviewCount: 318,
+        wouldWorkAgainPct: 99,
+        cancellationRate: 0,
+        serviceRadius: 6,
+        locationLat: 51.51,
+        locationLng: -0.12,
+      },
+      {
+        id: "cleaner-4",
+        userId: "user-cleaner-4",
+        bio: "Focused on property management clients. I handle everything from regular cleans to emergency turnovers.",
+        serviceTypes: ["standard", "airbnb_turnover", "office"],
+        hourlyRate: 21,
+        isAvailable: true,
+        isVerified: true,
+        verificationBadge: "verified",
+        trustScore: 88,
+        repeatBookingRate: 68,
+        completionRate: 95,
+        responseTime: "< 1 hr",
+        totalBookings: 198,
+        averageRating: 4.7,
+        reviewCount: 89,
+        wouldWorkAgainPct: 88,
+        cancellationRate: 5,
+        serviceRadius: 15,
+        locationLat: 51.505,
+        locationLng: -0.07,
+      },
+    ]).onConflictDoNothing();
+
+    await db.insert(usersTable).values({
+      id: "user-demo-1",
+      email: "sarah@example.com",
+      fullName: "Sarah Mitchell",
+      phone: "+44 7700 900123",
+      avatarUrl: "https://i.pravatar.cc/150?img=47",
+      role: "customer",
+      isVerified: true,
+      verificationBadge: "verified",
+      trustScore: 87,
+    }).onConflictDoNothing();
+
+    await db.insert(propertiesTable).values([
+      {
+        id: "prop-1",
+        ownerId: "user-demo-1",
+        name: "Shoreditch Studio",
+        propertyType: "airbnb",
+        addressLine1: "14 Curtain Road",
+        city: "London",
+        postcode: "EC2A 3NZ",
+        accessNotes: "Key in lockbox code 4521. Lift to 3rd floor.",
+        parkingInfo: "No parking. Nearest paid parking on Old Street.",
+        hasLift: true,
+        petsInfo: "No pets",
+        cleaningFrequency: "weekly",
+        bedroomCount: 1,
+        bathroomCount: 1,
+        sqft: 520,
+      },
+      {
+        id: "prop-2",
+        ownerId: "user-demo-1",
+        name: "Hackney Family Home",
+        propertyType: "house",
+        addressLine1: "8 Queensbridge Road",
+        city: "London",
+        postcode: "E8 3NH",
+        accessNotes: "Front door key under the mat. Alarm code: 7890.",
+        parkingInfo: "Free parking on street after 6pm.",
+        hasLift: false,
+        petsInfo: "1 cat — very friendly",
+        cleaningFrequency: "biweekly",
+        bedroomCount: 3,
+        bathroomCount: 2,
+        sqft: 1200,
+      },
+    ]).onConflictDoNothing();
+
+    logger.info("Demo data seeded successfully.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed demo data");
+  }
+}

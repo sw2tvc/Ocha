@@ -1,9 +1,10 @@
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProperty } from "@workspace/api-client-react";
+import { useCreateProperty, getListPropertiesQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,7 +29,11 @@ type FormData = z.infer<typeof schema>;
 
 export default function AddProperty() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const returnTo = params.get("returnTo");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const createProperty = useCreateProperty();
 
   const form = useForm<FormData>({
@@ -42,11 +47,11 @@ export default function AddProperty() {
   const onSubmit = async (data: FormData) => {
     try {
       await createProperty.mutateAsync({ data: data as any });
-      setLocation("/properties");
-      toast({ title: "Property added" });
+      await queryClient.invalidateQueries({ queryKey: getListPropertiesQueryKey() });
+      toast({ title: "Property added", description: `${data.name} is now available for booking.` });
+      setLocation(returnTo || "/properties");
     } catch {
-      setLocation("/properties");
-      toast({ title: "Property saved", description: "Demo mode." });
+      toast({ title: "Failed to save property", variant: "destructive" });
     }
   };
 
@@ -56,12 +61,15 @@ export default function AddProperty() {
         <div className="max-w-md mx-auto flex items-center gap-3">
           <button
             data-testid="button-back"
-            onClick={() => setLocation("/properties")}
+            onClick={() => setLocation(returnTo || "/properties")}
             className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
           >
             <ArrowLeft size={18} />
           </button>
-          <h1 className="text-base font-bold">Add Property</h1>
+          <div>
+            <h1 className="text-base font-bold">Add Property</h1>
+            {returnTo && <p className="text-xs text-muted-foreground">Saved, you'll return to booking</p>}
+          </div>
         </div>
       </div>
 
@@ -143,9 +151,11 @@ export default function AddProperty() {
                 {["bedroomCount", "bathroomCount", "sqft"].map((name) => (
                   <FormField key={name} control={form.control} name={name as any} render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-muted-foreground capitalize">{name === "sqft" ? "Sq ft" : name === "bedroomCount" ? "Beds" : "Baths"}</FormLabel>
+                      <FormLabel className="text-xs text-muted-foreground capitalize">
+                        {name === "sqft" ? "Sq ft" : name === "bedroomCount" ? "Beds" : "Baths"}
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} type="number" data-testid={`input-${name}`} className="rounded-xl" />
+                        <Input {...field} type="number" min={0} data-testid={`input-${name}`} className="rounded-xl" />
                       </FormControl>
                     </FormItem>
                   )} />
@@ -218,9 +228,9 @@ export default function AddProperty() {
               type="submit"
               data-testid="button-save-property"
               disabled={createProperty.isPending}
-              className="w-full bg-primary text-primary-foreground rounded-2xl py-4 font-bold text-sm disabled:opacity-60"
+              className="w-full bg-primary text-primary-foreground rounded-2xl py-4 font-bold text-sm disabled:opacity-60 active:opacity-80 transition-opacity"
             >
-              {createProperty.isPending ? "Saving..." : "Save Property"}
+              {createProperty.isPending ? "Saving…" : returnTo ? "Save & Return to Booking" : "Save Property"}
             </button>
           </form>
         </Form>
