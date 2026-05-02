@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedDemoData, seedNotifications, seedEnRouteBooking, seedDisputedBooking, seedMessages, seedAvailability, seedAcceptedBooking } from "./lib/seed";
+import { seedDemoData, seedNotifications, seedEnRouteBooking, seedDisputedBooking, seedMessages, seedAvailability, seedAcceptedBooking, seedCleanerEarningsHistory } from "./lib/seed";
 
 const rawPort = process.env["PORT"];
 
@@ -16,7 +16,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-Promise.all([seedDemoData(), seedNotifications(), seedEnRouteBooking(), seedDisputedBooking(), seedMessages(), seedAvailability(), seedAcceptedBooking()]).then(() => {
+Promise.all([seedDemoData(), seedNotifications(), seedEnRouteBooking(), seedDisputedBooking(), seedMessages(), seedAvailability(), seedAcceptedBooking(), seedCleanerEarningsHistory()]).then(() => {
   app.listen(port, (err) => {
     if (err) {
       logger.error({ err }, "Error listening on port");

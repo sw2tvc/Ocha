@@ -484,6 +484,69 @@ export async function seedAvailability() {
   }
 }
 
+export async function seedCleanerEarningsHistory() {
+  try {
+    const existing = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.id, "booking-hist-01"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    const now = Date.now();
+    const day = 86400000;
+
+    /* 22 completed bookings for Amara over the last 12 weeks */
+    const jobs: Array<{
+      id: string; daysAgo: number; serviceType: string;
+      price: number; propertyId: string; durationHours: number;
+    }> = [
+      { id: "booking-hist-01", daysAgo: 2,  serviceType: "deep_clean",      price: 100, propertyId: "prop-1", durationHours: 4 },
+      { id: "booking-hist-02", daysAgo: 4,  serviceType: "standard",         price:  44, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-03", daysAgo: 5,  serviceType: "airbnb_turnover",  price:  60, propertyId: "prop-1", durationHours: 3 },
+      { id: "booking-hist-04", daysAgo: 7,  serviceType: "standard",         price:  44, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-05", daysAgo: 9,  serviceType: "deep_clean",       price:  96, propertyId: "prop-1", durationHours: 4 },
+      { id: "booking-hist-06", daysAgo: 11, serviceType: "standard",         price:  48, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-07", daysAgo: 12, serviceType: "airbnb_turnover",  price:  66, propertyId: "prop-1", durationHours: 3 },
+      { id: "booking-hist-08", daysAgo: 14, serviceType: "standard",         price:  44, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-09", daysAgo: 16, serviceType: "deep_clean",       price: 104, propertyId: "prop-1", durationHours: 4 },
+      { id: "booking-hist-10", daysAgo: 18, serviceType: "standard",         price:  44, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-11", daysAgo: 20, serviceType: "airbnb_turnover",  price:  60, propertyId: "prop-1", durationHours: 3 },
+      { id: "booking-hist-12", daysAgo: 22, serviceType: "deep_clean",       price: 100, propertyId: "prop-2", durationHours: 4 },
+      { id: "booking-hist-13", daysAgo: 25, serviceType: "standard",         price:  48, propertyId: "prop-1", durationHours: 2 },
+      { id: "booking-hist-14", daysAgo: 28, serviceType: "airbnb_turnover",  price:  66, propertyId: "prop-2", durationHours: 3 },
+      { id: "booking-hist-15", daysAgo: 30, serviceType: "deep_clean",       price:  96, propertyId: "prop-1", durationHours: 4 },
+      { id: "booking-hist-16", daysAgo: 33, serviceType: "standard",         price:  44, propertyId: "prop-2", durationHours: 2 },
+      { id: "booking-hist-17", daysAgo: 36, serviceType: "airbnb_turnover",  price:  60, propertyId: "prop-1", durationHours: 3 },
+      { id: "booking-hist-18", daysAgo: 40, serviceType: "deep_clean",       price: 100, propertyId: "prop-2", durationHours: 4 },
+      { id: "booking-hist-19", daysAgo: 44, serviceType: "standard",         price:  44, propertyId: "prop-1", durationHours: 2 },
+      { id: "booking-hist-20", daysAgo: 48, serviceType: "airbnb_turnover",  price:  66, propertyId: "prop-2", durationHours: 3 },
+      { id: "booking-hist-21", daysAgo: 52, serviceType: "deep_clean",       price: 104, propertyId: "prop-1", durationHours: 4 },
+      { id: "booking-hist-22", daysAgo: 56, serviceType: "standard",         price:  48, propertyId: "prop-2", durationHours: 2 },
+    ];
+
+    await db.insert(bookingsTable).values(
+      jobs.map((j) => ({
+        id: j.id,
+        customerId: "user-demo-1",
+        cleanerId:  "cleaner-1",
+        propertyId: j.propertyId,
+        serviceType: j.serviceType as any,
+        status: "completed" as any,
+        scheduledAt: new Date(now - j.daysAgo * day),
+        estimatedDurationHours: j.durationHours,
+        totalPrice: j.price,
+        urgency: "standard" as any,
+        reviewStatus: "both_submitted" as any,
+      }))
+    ).onConflictDoNothing();
+
+    logger.info("Cleaner earnings history seeded.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed earnings history");
+  }
+}
+
 export async function seedAcceptedBooking() {
   try {
     const existing = await db

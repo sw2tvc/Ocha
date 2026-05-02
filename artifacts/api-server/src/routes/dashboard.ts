@@ -137,4 +137,86 @@ router.get("/dashboard/cleaner", async (req, res) => {
   });
 });
 
+/* ── Cleaner earnings breakdown ─────────────────── */
+router.get("/dashboard/cleaner/earnings", async (req, res) => {
+  const userId = req.headers["x-user-id"] as string;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const cleaner = await db
+    .select()
+    .from(cleanersTable)
+    .where(eq(cleanersTable.userId, userId))
+    .limit(1);
+
+  const cleanerId = cleaner[0]?.id;
+  if (!cleanerId) return res.json({ weekly: [], monthly: [], recentJobs: [], summary: {} });
+
+  const now = new Date();
+  const twelveWeeksAgo = new Date(now.getTime() - 84 * 86400000);
+
+  const completed = await db
+    .select()
+    .from(bookingsTable)
+    .where(and(eq(bookingsTable.cleanerId, cleanerId), eq(bookingsTable.status, "completed")));
+
+  /* ── Weekly buckets (last 12 weeks) ── */
+  const weekly: { week: string; earnings: number; jobs: number }[] = [];
+  for (let w = 11; w >= 0; w--) {
+    const wStart = new Date(now.getTime() - (w + 1) * 7 * 86400000);
+    const wEnd   = new Date(now.getTime() - w * 7 * 86400000);
+    const label  = wStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    const jobs   = completed.filter((b) => {
+      const d = new Date(b.scheduledAt);
+      return d >= wStart && d < wEnd;
+    });
+    weekly.push({ week: label, earnings: jobs.reduce((s, b) => s + b.totalPrice, 0), jobs: jobs.length });
+  }
+
+  /* ── Monthly buckets (last 6 months) ── */
+  const monthly: { month: string; earnings: number; jobs: number }[] = [];
+  for (let m = 5; m >= 0; m--) {
+    const mDate  = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const mEnd   = new Date(now.getFullYear(), now.getMonth() - m + 1, 1);
+    const label  = mDate.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+    const jobs   = completed.filter((b) => {
+      const d = new Date(b.scheduledAt);
+      return d >= mDate && d < mEnd;
+    });
+    monthly.push({ month: label, earnings: jobs.reduce((s, b) => s + b.totalPrice, 0), jobs: jobs.length });
+  }
+
+  /* ── Recent jobs (last 20 completed, hydrated) ── */
+  const recent = completed
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
+    .slice(0, 20);
+
+  const recentJobs = await Promise.all(
+    recent.map(async (b) => {
+      const propRow = await db
+        .select({ name: propertiesTable.name })
+        .from(propertiesTable)
+        .where(eq(propertiesTable.id, b.propertyId))
+        .limit(1);
+      return { ...b, propertyName: propRow[0]?.name || "Property" };
+    })
+  );
+
+  /* ── Summary stats ── */
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const thisYear  = completed.filter((b) => new Date(b.scheduledAt) >= yearStart);
+  const allEarnings = completed.map((b) => b.totalPrice);
+  const weeklyTotals = weekly.map((w) => w.earnings);
+
+  const summary = {
+    totalJobs:       completed.length,
+    totalEarnings:   completed.reduce((s, b) => s + b.totalPrice, 0),
+    thisYearEarnings: thisYear.reduce((s, b) => s + b.totalPrice, 0),
+    avgPerJob:       completed.length ? Math.round(completed.reduce((s, b) => s + b.totalPrice, 0) / completed.length) : 0,
+    bestWeek:        Math.max(0, ...weeklyTotals),
+    avgWeekly:       weekly.length ? Math.round(weekly.reduce((s, w) => s + w.earnings, 0) / weekly.length) : 0,
+  };
+
+  return res.json({ weekly, monthly, recentJobs, summary });
+});
+
 export default router;
