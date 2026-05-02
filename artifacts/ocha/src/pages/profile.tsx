@@ -133,7 +133,7 @@ export default function Profile() {
         {/* Account actions */}
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           {[
-            { label: "Edit Profile", href: "/profile/edit", icon: User },
+            { label: "Account & Settings", href: "/profile/settings", icon: User },
             { label: "Notifications", href: "/notifications", icon: Mail },
           ].map((item) => {
             const Icon = item.icon;

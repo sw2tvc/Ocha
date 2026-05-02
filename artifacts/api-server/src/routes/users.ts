@@ -66,12 +66,40 @@ router.put("/auth/profile", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error });
   }
+
+  /* Identity anchors — phone and email are NEVER updated through this
+     endpoint. Changes to either require a dedicated re-verification flow
+     which resets the corresponding trust-score component.            */
+  const { phone: _phone, ...safeUpdate } = parsed.data as any;
+
+  if (!Object.keys(safeUpdate).length) {
+    const rows = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    return res.json(rows[0]);
+  }
+
   const updated = await db
     .update(usersTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...safeUpdate, updatedAt: new Date() })
     .where(eq(usersTable.id, userId))
     .returning();
   return res.json(updated[0]);
+});
+
+/* Phone-change intent — logs the request and explains re-verification.
+   Does NOT update the phone number. A real implementation would trigger
+   an OTP flow; here it returns the policy explanation.                */
+router.post("/auth/request-phone-change", async (req, res) => {
+  const userId = req.headers["x-user-id"] as string;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  return res.status(200).json({
+    requiresVerification: true,
+    message:
+      "Changing your phone number starts a new verification. Your phone-verified trust status will be removed until the new number is confirmed.",
+    trustImpact: {
+      phoneVerifiedLost: true,
+      estimatedScoreDrop: 12,
+    },
+  });
 });
 
 export default router;

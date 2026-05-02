@@ -14,6 +14,7 @@ import Review from "@/pages/review";
 import Properties from "@/pages/properties";
 import AddProperty from "@/pages/add-property";
 import Profile from "@/pages/profile";
+import ProfileSettings from "@/pages/profile-settings";
 import Notifications from "@/pages/notifications";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/properties" component={Properties} />
         <Route path="/properties/new" component={AddProperty} />
         <Route path="/profile" component={Profile} />
+        <Route path="/profile/settings" component={ProfileSettings} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
