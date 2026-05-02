@@ -336,3 +336,5 @@ router.post("/bookings/:bookingId/cancel", async (req, res) => {
   const hydrated = await hydrateBooking(booking);
   return res.json(hydrated);
 });
+
+export default router;
