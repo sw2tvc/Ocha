@@ -484,6 +484,39 @@ export async function seedAvailability() {
   }
 }
 
+export async function seedAcceptedBooking() {
+  try {
+    const existing = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.id, "booking-accepted-1"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    /* Scheduled 2 hours from now — so it appears in "today" for Amara */
+    const scheduledAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+
+    await db.insert(bookingsTable).values({
+      id: "booking-accepted-1",
+      customerId: "user-demo-1",
+      cleanerId: "cleaner-1",
+      propertyId: "prop-1",
+      serviceType: "standard",
+      status: "accepted",
+      scheduledAt,
+      estimatedDurationHours: 2,
+      totalPrice: 48,
+      urgency: "standard",
+      notes: "Key is under the mat. Please bring your own products if possible.",
+      reviewStatus: "pending",
+    }).onConflictDoNothing();
+
+    logger.info("Accepted demo booking seeded for Amara.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed accepted booking");
+  }
+}
+
 export async function seedEnRouteBooking() {
   try {
     const existing = await db

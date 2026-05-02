@@ -23,6 +23,7 @@ import CleanerAvailability from "@/pages/cleaner-availability";
 import DisputePage from "@/pages/dispute";
 import MessagesPage from "@/pages/messages";
 import CleanerDashboard from "@/pages/cleaner-dashboard";
+import CleanerJobTracker from "@/pages/cleaner-job-tracker";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
@@ -60,6 +61,7 @@ function Router() {
         <Route path="/cleaner-dashboard/availability" component={CleanerAvailability} />
         <Route path="/bookings/:bookingId/messages" component={MessagesPage} />
         <Route path="/cleaner-dashboard" component={CleanerDashboard} />
+        <Route path="/cleaner-jobs/:bookingId" component={CleanerJobTracker} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>

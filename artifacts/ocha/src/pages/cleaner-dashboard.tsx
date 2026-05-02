@@ -376,7 +376,7 @@ export default function CleanerDashboard() {
                     <button
                       key={booking.id}
                       data-testid={`card-job-${booking.id}`}
-                      onClick={() => setLocation(`/bookings/${booking.id}`)}
+                      onClick={() => setLocation(`/cleaner-jobs/${booking.id}`)}
                       className="w-full bg-card border border-border rounded-2xl p-4 flex items-center gap-3 text-left"
                     >
                       <Clock size={14} className="text-primary shrink-0" />
