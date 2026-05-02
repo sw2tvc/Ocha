@@ -1,22 +1,41 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Ocha - Trusted Cleaning & Property Services Marketplace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Auth and user profile
+  - name: cleaners
+    description: Cleaner profiles and availability
+  - name: properties
+    description: Property profiles
+  - name: bookings
+    description: Booking management
+  - name: reviews
+    description: Double-blind review system
+  - name: trust
+    description: Trust scores and verification
+  - name: availability
+    description: Availability and service zones
+  - name: notifications
+    description: Notification management
+  - name: admin
+    description: Admin operations
+  - name: dashboard
+    description: Dashboard summary data
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +43,721 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/profile:
+    put:
+      operationId: updateProfile
+      tags: [auth]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /cleaners:
+    get:
+      operationId: listCleaners
+      tags: [cleaners]
+      summary: List nearby available cleaners
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+        - name: available
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of cleaners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerListResponse"
+
+  /cleaners/{cleanerId}:
+    get:
+      operationId: getCleaner
+      tags: [cleaners]
+      summary: Get cleaner profile
+      parameters:
+        - name: cleanerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cleaner profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerProfile"
+
+  /cleaners/{cleanerId}/availability:
+    get:
+      operationId: getCleanerAvailability
+      tags: [cleaners]
+      summary: Get cleaner availability slots
+      parameters:
+        - name: cleanerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability slots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilitySlots"
+
+  /cleaners/me/profile:
+    get:
+      operationId: getMyCleanerProfile
+      tags: [cleaners]
+      summary: Get own cleaner profile
+      responses:
+        "200":
+          description: Cleaner profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerProfile"
+    put:
+      operationId: updateMyCleanerProfile
+      tags: [cleaners]
+      summary: Update cleaner profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCleanerProfileBody"
+      responses:
+        "200":
+          description: Updated cleaner profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerProfile"
+
+  /cleaners/me/toggle-availability:
+    post:
+      operationId: toggleCleanerAvailability
+      tags: [cleaners]
+      summary: Toggle cleaner online/offline status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleAvailabilityBody"
+      responses:
+        "200":
+          description: Updated availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerAvailabilityStatus"
+
+  /cleaners/me/earnings:
+    get:
+      operationId: getMyEarnings
+      tags: [cleaners]
+      summary: Get cleaner earnings summary
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [week, month, year]
+      responses:
+        "200":
+          description: Earnings data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EarningsSummary"
+
+  /properties:
+    get:
+      operationId: listProperties
+      tags: [properties]
+      summary: List user properties
+      responses:
+        "200":
+          description: List of properties
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyListResponse"
+    post:
+      operationId: createProperty
+      tags: [properties]
+      summary: Create a property profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePropertyBody"
+      responses:
+        "201":
+          description: Created property
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+
+  /properties/{propertyId}:
+    get:
+      operationId: getProperty
+      tags: [properties]
+      summary: Get property profile
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Property profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+    put:
+      operationId: updateProperty
+      tags: [properties]
+      summary: Update property profile
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePropertyBody"
+      responses:
+        "200":
+          description: Updated property
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+    delete:
+      operationId: deleteProperty
+      tags: [properties]
+      summary: Delete a property
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /properties/{propertyId}/qr-code:
+    get:
+      operationId: getPropertyQrCode
+      tags: [properties]
+      summary: Get QR code URL for property
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: QR code data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrCodeResponse"
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List bookings for current user
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [customer, cleaner]
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingListResponse"
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a new booking request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingBody"
+      responses:
+        "201":
+          description: Created booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{bookingId}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get booking detail
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{bookingId}/status:
+    put:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Update booking status
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingStatusBody"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{bookingId}/cancel:
+    post:
+      operationId: cancelBooking
+      tags: [bookings]
+      summary: Cancel a booking
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelBookingBody"
+      responses:
+        "200":
+          description: Cancelled booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /reviews:
+    post:
+      operationId: submitReview
+      tags: [reviews]
+      summary: Submit a review for a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitReviewBody"
+      responses:
+        "201":
+          description: Submitted review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  /reviews/booking/{bookingId}:
+    get:
+      operationId: getBookingReviews
+      tags: [reviews]
+      summary: Get reviews for a booking (after reveal)
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reviews for booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingReviewsResponse"
+
+  /reviews/cleaner/{cleanerId}:
+    get:
+      operationId: getCleanerReviews
+      tags: [reviews]
+      summary: Get revealed reviews for a cleaner
+      parameters:
+        - name: cleanerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cleaner reviews
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewListResponse"
+
+  /trust/me:
+    get:
+      operationId: getMyTrustScore
+      tags: [trust]
+      summary: Get own trust score and verification status
+      responses:
+        "200":
+          description: Trust data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrustProfile"
+
+  /trust/{userId}:
+    get:
+      operationId: getUserTrustScore
+      tags: [trust]
+      summary: Get trust score for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trust profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrustProfile"
+
+  /trust/verify/phone:
+    post:
+      operationId: verifyPhone
+      tags: [trust]
+      summary: Initiate phone verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPhoneBody"
+      responses:
+        "200":
+          description: Verification initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResponse"
+
+  /trust/verify/phone/confirm:
+    post:
+      operationId: confirmPhoneVerification
+      tags: [trust]
+      summary: Confirm phone verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPhoneBody"
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResponse"
+
+  /availability/nearby:
+    get:
+      operationId: getNearbyAvailability
+      tags: [availability]
+      summary: Get nearby cleaner availability summary
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Nearby availability summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NearbyAvailabilitySummary"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for current user
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+
+  /notifications/{notificationId}/read:
+    put:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    put:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /dashboard/customer:
+    get:
+      operationId: getCustomerDashboard
+      tags: [dashboard]
+      summary: Get customer dashboard summary
+      responses:
+        "200":
+          description: Customer dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDashboard"
+
+  /dashboard/cleaner:
+    get:
+      operationId: getCleanerDashboard
+      tags: [dashboard]
+      summary: Get cleaner dashboard summary
+      responses:
+        "200":
+          description: Cleaner dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanerDashboard"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all users (admin)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+
+  /admin/users/{userId}/suspend:
+    post:
+      operationId: adminSuspendUser
+      tags: [admin]
+      summary: Suspend a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendUserBody"
+      responses:
+        "200":
+          description: Suspended user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/metrics:
+    get:
+      operationId: getAdminMetrics
+      tags: [admin]
+      summary: Get platform operational metrics
+      responses:
+        "200":
+          description: Platform metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMetrics"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +768,889 @@ components:
       required:
         - status
 
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        avatarUrl:
+          type: string
+        role:
+          type: string
+          enum: [customer, cleaner, property_manager, admin]
+        isVerified:
+          type: boolean
+        verificationBadge:
+          type: string
+          enum: [none, basic, verified, trusted]
+        createdAt:
+          type: string
+        trustScore:
+          type: number
+      required:
+        - id
+        - email
+        - role
+        - isVerified
+        - verificationBadge
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        avatarUrl:
+          type: string
+
+    CleanerProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+        bio:
+          type: string
+        serviceTypes:
+          type: array
+          items:
+            type: string
+        hourlyRate:
+          type: number
+        isAvailable:
+          type: boolean
+        isVerified:
+          type: boolean
+        verificationBadge:
+          type: string
+          enum: [none, basic, verified, trusted]
+        trustScore:
+          type: number
+        repeatBookingRate:
+          type: number
+        completionRate:
+          type: number
+        responseTime:
+          type: string
+        totalBookings:
+          type: integer
+        averageRating:
+          type: number
+        reviewCount:
+          type: integer
+        wouldWorkAgainPct:
+          type: number
+        cancellationRate:
+          type: number
+        serviceRadius:
+          type: number
+        location:
+          $ref: "#/components/schemas/Location"
+        distanceKm:
+          type: number
+        eta:
+          type: string
+      required:
+        - id
+        - userId
+        - fullName
+        - isAvailable
+        - isVerified
+        - verificationBadge
+        - trustScore
+        - totalBookings
+        - averageRating
+
+    CleanerListResponse:
+      type: object
+      properties:
+        cleaners:
+          type: array
+          items:
+            $ref: "#/components/schemas/CleanerProfile"
+        total:
+          type: integer
+        nearbyCount:
+          type: integer
+        page:
+          type: integer
+      required:
+        - cleaners
+        - total
+
+    UpdateCleanerProfileBody:
+      type: object
+      properties:
+        bio:
+          type: string
+        serviceTypes:
+          type: array
+          items:
+            type: string
+        hourlyRate:
+          type: number
+        serviceRadius:
+          type: number
+
+    ToggleAvailabilityBody:
+      type: object
+      properties:
+        isAvailable:
+          type: boolean
+      required:
+        - isAvailable
+
+    CleanerAvailabilityStatus:
+      type: object
+      properties:
+        isAvailable:
+          type: boolean
+        updatedAt:
+          type: string
+      required:
+        - isAvailable
+
+    AvailabilitySlots:
+      type: object
+      properties:
+        cleanerId:
+          type: string
+        date:
+          type: string
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSlot"
+      required:
+        - cleanerId
+        - slots
+
+    TimeSlot:
+      type: object
+      properties:
+        startTime:
+          type: string
+        endTime:
+          type: string
+        available:
+          type: boolean
+      required:
+        - startTime
+        - endTime
+        - available
+
+    EarningsSummary:
+      type: object
+      properties:
+        period:
+          type: string
+        totalEarned:
+          type: number
+        completedJobs:
+          type: integer
+        pendingPayout:
+          type: number
+        averagePerJob:
+          type: number
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/EarningPeriod"
+      required:
+        - period
+        - totalEarned
+        - completedJobs
+
+    EarningPeriod:
+      type: object
+      properties:
+        label:
+          type: string
+        amount:
+          type: number
+        jobs:
+          type: integer
+      required:
+        - label
+        - amount
+        - jobs
+
+    Property:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        name:
+          type: string
+        propertyType:
+          type: string
+          enum: [apartment, house, office, airbnb, hmo, serviced_accommodation, other]
+        addressLine1:
+          type: string
+        city:
+          type: string
+        postcode:
+          type: string
+        location:
+          $ref: "#/components/schemas/Location"
+        photoUrl:
+          type: string
+        entrancePhotoUrl:
+          type: string
+        accessNotes:
+          type: string
+        parkingInfo:
+          type: string
+        hasLift:
+          type: boolean
+        petsInfo:
+          type: string
+        cleaningFrequency:
+          type: string
+          enum: [once, weekly, biweekly, monthly, on_demand]
+        preferredCleanerId:
+          type: string
+        bedroomCount:
+          type: integer
+        bathroomCount:
+          type: integer
+        sqft:
+          type: integer
+        qrCodeUrl:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - ownerId
+        - name
+        - propertyType
+        - addressLine1
+        - city
+        - postcode
+
+    PropertyListResponse:
+      type: object
+      properties:
+        properties:
+          type: array
+          items:
+            $ref: "#/components/schemas/Property"
+        total:
+          type: integer
+      required:
+        - properties
+        - total
+
+    CreatePropertyBody:
+      type: object
+      properties:
+        name:
+          type: string
+        propertyType:
+          type: string
+        addressLine1:
+          type: string
+        city:
+          type: string
+        postcode:
+          type: string
+        accessNotes:
+          type: string
+        parkingInfo:
+          type: string
+        hasLift:
+          type: boolean
+        petsInfo:
+          type: string
+        cleaningFrequency:
+          type: string
+        bedroomCount:
+          type: integer
+        bathroomCount:
+          type: integer
+        sqft:
+          type: integer
+      required:
+        - name
+        - propertyType
+        - addressLine1
+        - city
+        - postcode
+
+    UpdatePropertyBody:
+      type: object
+      properties:
+        name:
+          type: string
+        accessNotes:
+          type: string
+        parkingInfo:
+          type: string
+        hasLift:
+          type: boolean
+        petsInfo:
+          type: string
+        cleaningFrequency:
+          type: string
+        preferredCleanerId:
+          type: string
+        photoUrl:
+          type: string
+
+    QrCodeResponse:
+      type: object
+      properties:
+        qrCodeUrl:
+          type: string
+        deepLink:
+          type: string
+        propertyId:
+          type: string
+      required:
+        - qrCodeUrl
+        - deepLink
+        - propertyId
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        cleanerId:
+          type: string
+        propertyId:
+          type: string
+        serviceType:
+          type: string
+          enum: [standard, deep_clean, end_of_tenancy, airbnb_turnover, office, recurring]
+        status:
+          type: string
+          enum: [pending, accepted, en_route, in_progress, completed, cancelled, disputed]
+        scheduledAt:
+          type: string
+        estimatedDurationHours:
+          type: number
+        totalPrice:
+          type: number
+        urgency:
+          type: string
+          enum: [standard, urgent, emergency]
+        notes:
+          type: string
+        cancellationReason:
+          type: string
+        customer:
+          $ref: "#/components/schemas/User"
+        cleaner:
+          $ref: "#/components/schemas/CleanerProfile"
+        property:
+          $ref: "#/components/schemas/Property"
+        reviewStatus:
+          type: string
+          enum: [pending, customer_submitted, cleaner_submitted, both_submitted, revealed]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - customerId
+        - cleanerId
+        - propertyId
+        - serviceType
+        - status
+        - scheduledAt
+        - totalPrice
+
+    BookingListResponse:
+      type: object
+      properties:
+        bookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        total:
+          type: integer
+        page:
+          type: integer
+      required:
+        - bookings
+        - total
+
+    CreateBookingBody:
+      type: object
+      properties:
+        cleanerId:
+          type: string
+        propertyId:
+          type: string
+        serviceType:
+          type: string
+        scheduledAt:
+          type: string
+        estimatedDurationHours:
+          type: number
+        urgency:
+          type: string
+        notes:
+          type: string
+      required:
+        - cleanerId
+        - propertyId
+        - serviceType
+        - scheduledAt
+
+    UpdateBookingStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    CancelBookingBody:
+      type: object
+      properties:
+        reason:
+          type: string
+      required:
+        - reason
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingId:
+          type: string
+        reviewerId:
+          type: string
+        revieweeId:
+          type: string
+        reviewerRole:
+          type: string
+          enum: [customer, cleaner]
+        punctualityRating:
+          type: integer
+        professionalismRating:
+          type: integer
+        qualityRating:
+          type: integer
+        communicationRating:
+          type: integer
+        reliabilityRating:
+          type: integer
+        overallRating:
+          type: number
+        comment:
+          type: string
+        wouldWorkAgain:
+          type: boolean
+        isRevealed:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - bookingId
+        - reviewerId
+        - revieweeId
+        - reviewerRole
+        - overallRating
+        - wouldWorkAgain
+        - isRevealed
+
+    ReviewListResponse:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        total:
+          type: integer
+        averageRating:
+          type: number
+        wouldWorkAgainPct:
+          type: number
+      required:
+        - reviews
+        - total
+
+    BookingReviewsResponse:
+      type: object
+      properties:
+        bookingId:
+          type: string
+        customerReview:
+          $ref: "#/components/schemas/Review"
+        cleanerReview:
+          $ref: "#/components/schemas/Review"
+        areRevealed:
+          type: boolean
+        revealAt:
+          type: string
+      required:
+        - bookingId
+        - areRevealed
+
+    SubmitReviewBody:
+      type: object
+      properties:
+        bookingId:
+          type: string
+        punctualityRating:
+          type: integer
+        professionalismRating:
+          type: integer
+        qualityRating:
+          type: integer
+        communicationRating:
+          type: integer
+        reliabilityRating:
+          type: integer
+        comment:
+          type: string
+        wouldWorkAgain:
+          type: boolean
+      required:
+        - bookingId
+        - wouldWorkAgain
+
+    TrustProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+        overallScore:
+          type: number
+        verificationStatus:
+          $ref: "#/components/schemas/VerificationStatus"
+        behavioralMetrics:
+          $ref: "#/components/schemas/BehavioralMetrics"
+        badge:
+          type: string
+          enum: [none, basic, verified, trusted]
+      required:
+        - userId
+        - overallScore
+        - verificationStatus
+        - badge
+
+    VerificationStatus:
+      type: object
+      properties:
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        idVerified:
+          type: boolean
+        selfieVerified:
+          type: boolean
+        addressVerified:
+          type: boolean
+        backgroundCheckDone:
+          type: boolean
+        paymentVerified:
+          type: boolean
+      required:
+        - emailVerified
+        - phoneVerified
+        - idVerified
+        - selfieVerified
+        - addressVerified
+        - backgroundCheckDone
+        - paymentVerified
+
+    BehavioralMetrics:
+      type: object
+      properties:
+        cancellationRate:
+          type: number
+        repeatBookingRate:
+          type: number
+        responseSpeed:
+          type: string
+        latePct:
+          type: number
+        disputeFrequency:
+          type: number
+        wouldWorkAgainPct:
+          type: number
+        completionRate:
+          type: number
+      required:
+        - cancellationRate
+        - repeatBookingRate
+        - completionRate
+
+    VerifyPhoneBody:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+      required:
+        - phoneNumber
+
+    ConfirmPhoneBody:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+        code:
+          type: string
+      required:
+        - phoneNumber
+        - code
+
+    VerificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        verified:
+          type: boolean
+      required:
+        - success
+
+    NearbyAvailabilitySummary:
+      type: object
+      properties:
+        nearbyCount:
+          type: integer
+        availableNow:
+          type: integer
+        estimatedWaitMinutes:
+          type: integer
+        radiusKm:
+          type: number
+        zones:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailabilityZone"
+      required:
+        - nearbyCount
+        - availableNow
+        - estimatedWaitMinutes
+
+    AvailabilityZone:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        radiusKm:
+          type: number
+        cleanerCount:
+          type: integer
+      required:
+        - lat
+        - lng
+        - radiusKm
+        - cleanerCount
+
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - lat
+        - lng
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+          enum: [booking_request, booking_accepted, booking_en_route, booking_started, booking_completed, review_request, review_revealed, trust_update, system]
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        bookingId:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - type
+        - title
+        - message
+        - isRead
+
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        total:
+          type: integer
+        unreadCount:
+          type: integer
+      required:
+        - notifications
+        - total
+        - unreadCount
+
+    CustomerDashboard:
+      type: object
+      properties:
+        upcomingBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        recentBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        savedCleaners:
+          type: array
+          items:
+            $ref: "#/components/schemas/CleanerProfile"
+        pendingReviews:
+          type: integer
+        totalBookings:
+          type: integer
+        properties:
+          type: array
+          items:
+            $ref: "#/components/schemas/Property"
+        nearbyCount:
+          type: integer
+      required:
+        - upcomingBookings
+        - recentBookings
+        - totalBookings
+        - pendingReviews
+
+    CleanerDashboard:
+      type: object
+      properties:
+        isAvailable:
+          type: boolean
+        todayBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        upcomingBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        pendingRequests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+        thisWeekEarnings:
+          type: number
+        thisMonthEarnings:
+          type: number
+        completedThisMonth:
+          type: integer
+        trustScore:
+          type: number
+        averageRating:
+          type: number
+        pendingReviews:
+          type: integer
+      required:
+        - isAvailable
+        - todayBookings
+        - upcomingBookings
+        - pendingRequests
+        - thisWeekEarnings
+        - thisMonthEarnings
+
+    AdminUserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+      required:
+        - users
+        - total
+
+    SuspendUserBody:
+      type: object
+      properties:
+        reason:
+          type: string
+      required:
+        - reason
+
+    AdminMetrics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalCleaners:
+          type: integer
+        totalBookings:
+          type: integer
+        activeBookings:
+          type: integer
+        completedBookings:
+          type: integer
+        disputedBookings:
+          type: integer
+        totalRevenue:
+          type: number
+        averageTrustScore:
+          type: number
+        verifiedCleaners:
+          type: integer
+        newUsersThisWeek:
+          type: integer
+      required:
+        - totalUsers
+        - totalCleaners
+        - totalBookings
+        - activeBookings
+        - completedBookings
+        - totalRevenue
