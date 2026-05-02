@@ -153,6 +153,62 @@ router.get("/cleaners/me/earnings", async (req, res) => {
   });
 });
 
+router.post("/cleaners/apply", async (req, res) => {
+  const userId = req.headers["x-user-id"] as string;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const schema = z.object({
+    serviceTypes: z.array(z.string()).min(1),
+    hourlyRate: z.number().min(10).max(200),
+    bio: z.string().min(20),
+    serviceRadius: z.number().min(1).max(50),
+    city: z.string().min(2),
+    postcode: z.string().min(2),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error });
+
+  /* Check if this user already has a cleaner profile */
+  const existing = await db
+    .select()
+    .from(cleanersTable)
+    .where(eq(cleanersTable.userId, userId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return res.status(409).json({ error: "Cleaner profile already exists", cleanerId: existing[0].id });
+  }
+
+  const cleanerId = `cleaner-${userId}-${Date.now()}`;
+  const [cleaner] = await db.insert(cleanersTable).values({
+    id: cleanerId,
+    userId,
+    bio: parsed.data.bio,
+    serviceTypes: parsed.data.serviceTypes,
+    hourlyRate: parsed.data.hourlyRate,
+    isAvailable: false,
+    isVerified: false,
+    verificationBadge: "none",
+    trustScore: 10,            /* baseline — grows through verification */
+    serviceRadius: parsed.data.serviceRadius,
+    responseTime: "< 1 hour",
+  }).returning();
+
+  /* Bump user role to cleaner */
+  await db
+    .update(usersTable)
+    .set({ role: "cleaner", updatedAt: new Date() })
+    .where(eq(usersTable.id, userId));
+
+  return res.status(201).json({
+    cleanerId: cleaner.id,
+    message: "Application received. Complete identity verification to go live.",
+    nextStep: "identity_verification",
+    trustScore: 10,
+  });
+});
+
 router.get("/cleaners/:cleanerId/availability", async (req, res) => {
   const { cleanerId } = req.params;
   const slots = Array.from({ length: 8 }, (_, i) => ({

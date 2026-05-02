@@ -18,6 +18,7 @@ import ProfileSettings from "@/pages/profile-settings";
 import Notifications from "@/pages/notifications";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import BecomeCleaner from "@/pages/become-cleaner";
 import CleanerDashboard from "@/pages/cleaner-dashboard";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/notifications" component={Notifications} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/become-a-cleaner" component={BecomeCleaner} />
         <Route path="/cleaner-dashboard" component={CleanerDashboard} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
