@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { usersTable, cleanersTable, propertiesTable, notificationsTable, bookingsTable } from "@workspace/db";
+import { usersTable, cleanersTable, propertiesTable, notificationsTable, bookingsTable, disputesTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -280,6 +280,53 @@ export async function seedNotifications() {
     logger.info("Notifications seeded.");
   } catch (err) {
     logger.error({ err }, "Failed to seed notifications");
+  }
+}
+
+export async function seedDisputedBooking() {
+  try {
+    const existing = await db
+      .select()
+      .from(disputesTable)
+      .where(eq(disputesTable.id, "dispute-demo-1"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    /* Create a disputed booking */
+    const scheduledAt = new Date(Date.now() - 3 * 86400000); /* 3 days ago */
+    await db.insert(bookingsTable).values({
+      id: "booking-disputed-1",
+      customerId: "user-demo-1",
+      cleanerId: "cleaner-2",
+      propertyId: "prop-2",
+      serviceType: "deep_clean",
+      status: "disputed",
+      scheduledAt,
+      estimatedDurationHours: 4,
+      totalPrice: 96,
+      urgency: "standard",
+      notes: "Please pay particular attention to the oven and bathroom tiles.",
+      reviewStatus: "pending",
+    }).onConflictDoNothing();
+
+    /* Create the dispute record */
+    await db.insert(disputesTable).values({
+      id: "dispute-demo-1",
+      bookingId: "booking-disputed-1",
+      raisedBy: "user-demo-1",
+      againstUserId: "user-cleaner-2",
+      reason: "incomplete_clean",
+      description: "The cleaner left after 2 hours despite booking a 4-hour deep clean. The oven was not cleaned, the bathroom tiles still have limescale, and the kitchen worktops were wiped but not properly disinfected. I have photos and WhatsApp messages confirming the agreed scope.",
+      raisedByEvidence: "I arrived home at 3pm to find the cleaner had already left. The oven was visibly untouched — still had burnt grease on the racks. Bathroom tiles still had significant limescale. I paid for a 4-hour deep clean and received what felt like a 2-hour standard clean.",
+      againstUserEvidence: null,
+      status: "evidence_submitted",
+      resolution: null,
+      resolvedAt: null,
+    }).onConflictDoNothing();
+
+    logger.info("Disputed booking + dispute seeded.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed disputed booking");
   }
 }
 

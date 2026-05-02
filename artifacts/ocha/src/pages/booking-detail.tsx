@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, MapPin, Calendar, Clock, Building2, MessageCircle, RefreshCw, XCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, Building2, MessageCircle, RefreshCw, XCircle, AlertTriangle, ShieldAlert } from "lucide-react";
 import {
   useGetBooking,
   useCancelBooking,
@@ -246,6 +246,26 @@ export default function BookingDetail() {
               className="w-full bg-primary text-primary-foreground rounded-2xl py-4 font-bold text-sm"
             >
               Leave a Review
+            </button>
+          )}
+
+          {/* View / raise dispute */}
+          {status === "disputed" && (
+            <button
+              onClick={() => setLocation(`/bookings/${b.id}/dispute`)}
+              className="w-full flex items-center justify-center gap-2 bg-amber-600 text-white rounded-2xl py-3.5 font-bold text-sm"
+            >
+              <ShieldAlert size={15} />
+              View dispute
+            </button>
+          )}
+          {status === "completed" && (
+            <button
+              onClick={() => setLocation(`/bookings/${b.id}/dispute`)}
+              className="w-full flex items-center justify-center gap-2 border border-destructive/30 text-destructive rounded-2xl py-3 font-semibold text-sm hover:bg-destructive/5 transition-colors"
+            >
+              <ShieldAlert size={14} />
+              Raise a dispute
             </button>
           )}
 

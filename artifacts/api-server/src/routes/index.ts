@@ -10,6 +10,7 @@ import availabilityRouter from "./availability";
 import notificationsRouter from "./notifications";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
+import disputesRouter from "./disputes";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(availabilityRouter);
 router.use(notificationsRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
+router.use(disputesRouter);
 
 export default router;

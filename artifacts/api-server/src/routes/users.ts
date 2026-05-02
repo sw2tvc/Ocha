@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, verificationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { UpdateProfileBody } from "@workspace/api-zod";
 
 const router = Router();
