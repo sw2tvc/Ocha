@@ -10,13 +10,19 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ShieldCheck,
 } from "lucide-react";
 import {
   useSubmitReview,
   useGetBooking,
   useGetBookingReviews,
+  useGetCleaner,
   getGetBookingQueryKey,
   getGetBookingReviewsQueryKey,
+  getGetCleanerQueryKey,
   getListBookingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,6 +37,9 @@ const CATEGORIES = [
   { id: "reliabilityRating", label: "Reliability", desc: "Dependable and consistent" },
 ];
 
+const VERBAL = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
+
+/* ── Star rating input ── */
 function StarRating({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
   const [hovered, setHovered] = useState(0);
   const interactive = !!onChange;
@@ -47,7 +56,7 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
           className={interactive ? "p-0.5 transition-transform hover:scale-110 active:scale-95" : "p-0.5"}
         >
           <Star
-            size={interactive ? 28 : 18}
+            size={interactive ? 28 : 16}
             className={`transition-colors ${
               star <= (hovered || value) ? "text-amber-500 fill-amber-500" : "text-muted-foreground/30"
             }`}
@@ -58,21 +67,20 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
   );
 }
 
+/* ── Horizontal rating bar ── */
 function RatingBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-3">
       <p className="text-xs text-muted-foreground w-28 shrink-0">{label}</p>
       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div
-          className="h-full bg-amber-400 rounded-full transition-all"
-          style={{ width: `${(value / 5) * 100}%` }}
-        />
+        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(value / 5) * 100}%` }} />
       </div>
       <span className="text-xs font-bold text-foreground w-6 text-right">{value.toFixed(1)}</span>
     </div>
   );
 }
 
+/* ── Revealed review card ── */
 function ReviewCard({ review, role }: { review: any; role: "customer" | "cleaner" }) {
   const overall = review.overallRating ?? 0;
   return (
@@ -86,7 +94,6 @@ function ReviewCard({ review, role }: { review: any; role: "customer" | "cleaner
           <span className="text-sm font-bold text-foreground">{overall.toFixed(1)}</span>
         </div>
       </div>
-
       <div className="flex flex-col gap-2">
         {[
           { label: "Quality", value: review.qualityRating },
@@ -96,38 +103,200 @@ function ReviewCard({ review, role }: { review: any; role: "customer" | "cleaner
           { label: "Reliability", value: review.reliabilityRating },
         ]
           .filter((r) => r.value != null)
-          .map((r) => (
-            <RatingBar key={r.label} label={r.label} value={r.value} />
-          ))}
+          .map((r) => <RatingBar key={r.label} label={r.label} value={r.value} />)}
       </div>
-
       {review.comment && (
         <p className="text-sm text-muted-foreground leading-relaxed border-t border-border pt-3">
           "{review.comment}"
         </p>
       )}
-
-      <div
-        className={`flex items-center gap-1.5 text-xs font-medium ${
-          review.wouldWorkAgain ? "text-green-600" : "text-destructive"
-        }`}
-      >
-        {review.wouldWorkAgain ? (
-          <>
-            <ThumbsUp size={12} />
-            Would book again
-          </>
-        ) : (
-          <>
-            <ThumbsDown size={12} />
-            Would not book again
-          </>
-        )}
+      <div className={`flex items-center gap-1.5 text-xs font-medium ${review.wouldWorkAgain ? "text-green-600" : "text-destructive"}`}>
+        {review.wouldWorkAgain ? <><ThumbsUp size={12} />Would book again</> : <><ThumbsDown size={12} />Would not book again</>}
       </div>
     </div>
   );
 }
 
+/* ── Trust score SVG arc ── */
+function TrustArc({ score, size = 88 }: { score: number; size?: number }) {
+  const r = 36;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const arc = (score / 100) * circumference * 0.75;
+  const dashArray = `${arc} ${circumference}`;
+  const rotation = -225;
+
+  const color =
+    score >= 90 ? "#0d9488" : score >= 75 ? "#f59e0b" : "#ef4444";
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth="7"
+        strokeDasharray={`${circumference * 0.75} ${circumference}`}
+        strokeDashoffset="0" strokeLinecap="round"
+        transform={`rotate(${rotation} ${cx} ${cy})`} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="7"
+        strokeDasharray={dashArray}
+        strokeDashoffset="0" strokeLinecap="round"
+        transform={`rotate(${rotation} ${cx} ${cy})`} />
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="18" fontWeight="700" fill={color}>
+        {score}
+      </text>
+      <text x={cx} y={cy + 11} textAnchor="middle" fontSize="9" fill="#9ca3af">
+        / 100
+      </text>
+    </svg>
+  );
+}
+
+/* ── Trust score impact panel ── */
+function TrustImpactPanel({
+  customerReview,
+  cleaner,
+}: {
+  customerReview: any;
+  cleaner: any;
+}) {
+  const cleanerAvg: number = cleaner?.averageRating ?? 4.5;
+  const reviewOverall: number = customerReview?.overallRating ?? 0;
+  const trustScore: number = cleaner?.trustScore ?? 80;
+  const reviewCount: number = cleaner?.reviewCount ?? 0;
+  const wouldWorkAgainPct: number = cleaner?.wouldWorkAgainPct ?? 0;
+
+  const delta = reviewOverall - cleanerAvg;
+  const trustDelta =
+    delta > 0.3 ? +2 : delta > 0.05 ? +1 : delta < -0.3 ? -2 : delta < -0.05 ? -1 : 0;
+  const newTrustScore = Math.min(100, Math.max(0, trustScore + trustDelta));
+
+  const impactStatement =
+    delta > 0.15
+      ? `Your review raised the bar above ${cleaner?.fullName?.split(" ")[0]}'s average — a real boost.`
+      : delta < -0.15
+      ? `Your review pulled below average — honest feedback that drives improvement.`
+      : `Your review aligns with ${cleaner?.fullName?.split(" ")[0]}'s reputation — solid consistency.`;
+
+  const dimensions = [
+    { label: "Quality", key: "qualityRating" },
+    { label: "Punctuality", key: "punctualityRating" },
+    { label: "Communication", key: "communicationRating" },
+    { label: "Professionalism", key: "professionalismRating" },
+    { label: "Reliability", key: "reliabilityRating" },
+  ];
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-primary/5 border-b border-border px-4 py-3 flex items-center gap-2">
+        <ShieldCheck size={15} className="text-primary" />
+        <p className="text-xs font-bold text-primary uppercase tracking-wide">
+          Trust Score Impact
+        </p>
+      </div>
+
+      <div className="p-4 flex flex-col gap-5">
+        {/* Score before / after */}
+        <div className="flex items-center justify-around">
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Before</p>
+            <TrustArc score={trustScore} />
+          </div>
+
+          <div className="flex flex-col items-center gap-1">
+            <div
+              className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full ${
+                trustDelta > 0
+                  ? "text-green-700 bg-green-100"
+                  : trustDelta < 0
+                  ? "text-destructive bg-destructive/10"
+                  : "text-muted-foreground bg-muted"
+              }`}
+            >
+              {trustDelta > 0 ? (
+                <TrendingUp size={14} />
+              ) : trustDelta < 0 ? (
+                <TrendingDown size={14} />
+              ) : (
+                <Minus size={14} />
+              )}
+              {trustDelta > 0 ? `+${trustDelta}` : trustDelta}
+            </div>
+            <p className="text-[10px] text-muted-foreground">pts</p>
+          </div>
+
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">After</p>
+            <TrustArc score={newTrustScore} />
+          </div>
+        </div>
+
+        {/* Impact statement */}
+        <p className="text-xs text-muted-foreground leading-relaxed text-center">{impactStatement}</p>
+
+        {/* Dimension breakdown */}
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
+          <p className="text-[10px] font-bold text-foreground uppercase tracking-wide">
+            Your ratings vs cleaner's avg ({cleanerAvg.toFixed(1)} ⭐)
+          </p>
+          {dimensions.map(({ label, key }) => {
+            const val: number = customerReview?.[key] ?? 0;
+            if (!val) return null;
+            const diff = val - cleanerAvg;
+            const isAbove = diff > 0.05;
+            const isBelow = diff < -0.05;
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <p className="text-xs text-muted-foreground w-28 shrink-0">{label}</p>
+                <div className="flex-1 relative h-1.5 bg-muted rounded-full overflow-hidden">
+                  {/* Cleaner avg marker */}
+                  <div
+                    className="absolute top-0 h-full w-0.5 bg-foreground/20 z-10"
+                    style={{ left: `${(cleanerAvg / 5) * 100}%` }}
+                  />
+                  {/* This review bar */}
+                  <div
+                    className={`h-full rounded-full ${
+                      isAbove ? "bg-green-500" : isBelow ? "bg-amber-400" : "bg-primary/60"
+                    }`}
+                    style={{ width: `${(val / 5) * 100}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-1 w-14 justify-end shrink-0">
+                  <span className={`text-xs font-bold ${isAbove ? "text-green-600" : isBelow ? "text-amber-600" : "text-foreground"}`}>
+                    {val}.0
+                  </span>
+                  {isAbove ? (
+                    <TrendingUp size={11} className="text-green-500" />
+                  ) : isBelow ? (
+                    <TrendingDown size={11} className="text-amber-500" />
+                  ) : (
+                    <Minus size={11} className="text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Cleaner stats */}
+        <div className="grid grid-cols-3 gap-2 border-t border-border pt-4">
+          {[
+            { label: "Reviews", value: (reviewCount + 1).toString() },
+            { label: "Would rebook", value: `${wouldWorkAgainPct}%` },
+            { label: "Your review", value: `${reviewOverall.toFixed(1)} ⭐` },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex flex-col items-center gap-0.5 bg-muted rounded-xl py-2.5">
+              <p className="text-sm font-bold text-foreground">{value}</p>
+              <p className="text-[10px] text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════ PAGE ════════════════════════════════════ */
 export default function Review() {
   const { bookingId } = useParams();
   const [, setLocation] = useLocation();
@@ -148,9 +317,15 @@ export default function Review() {
     isLoading: reviewsLoading,
     refetch: refetchReviews,
   } = useGetBookingReviews(bookingId!, {
+    query: { enabled: !!bookingId, queryKey: getGetBookingReviewsQueryKey(bookingId!) },
+  });
+
+  const cleanerId = (booking as any)?.cleaner?.id || (booking as any)?.cleanerId;
+
+  const { data: cleanerProfile } = useGetCleaner(cleanerId!, {
     query: {
-      enabled: !!bookingId,
-      queryKey: getGetBookingReviewsQueryKey(bookingId!),
+      enabled: !!cleanerId,
+      queryKey: getGetCleanerQueryKey(cleanerId!),
     },
   });
 
@@ -158,13 +333,9 @@ export default function Review() {
   const allRated = CATEGORIES.every((c) => ratings[c.id]);
 
   const reviewStatus = (booking as any)?.reviewStatus as string | undefined;
-  const hasSubmitted = ["customer_submitted", "both_submitted", "revealed"].includes(
-    reviewStatus ?? ""
-  );
+  const hasSubmitted = ["customer_submitted", "both_submitted", "revealed"].includes(reviewStatus ?? "");
   const areRevealed = reviewData?.areRevealed || reviewStatus === "revealed";
-  const revealAt = (reviewData as any)?.revealAt
-    ? new Date((reviewData as any).revealAt)
-    : null;
+  const revealAt = (reviewData as any)?.revealAt ? new Date((reviewData as any).revealAt) : null;
 
   const formatRevealDate = (d: Date) =>
     d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
@@ -189,12 +360,8 @@ export default function Review() {
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: getGetBookingQueryKey(bookingId!) }),
-        queryClient.invalidateQueries({
-          queryKey: getGetBookingReviewsQueryKey(bookingId!),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getListBookingsQueryKey({ role: "customer" }),
-        }),
+        queryClient.invalidateQueries({ queryKey: getGetBookingReviewsQueryKey(bookingId!) }),
+        queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey({ role: "customer" }) }),
       ]);
       refetchReviews();
       toast({ title: "Review submitted!", description: "Sealed until your cleaner responds." });
@@ -205,6 +372,7 @@ export default function Review() {
 
   const cleaner = (booking as any)?.cleaner;
   const property = (booking as any)?.property;
+  const enrichedCleaner = cleanerProfile ?? cleaner;
 
   return (
     <div className="flex flex-col min-h-screen pb-32 bg-background">
@@ -232,7 +400,7 @@ export default function Review() {
           <>
             <Skeleton className="h-20 rounded-2xl" />
             <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-32 rounded-2xl" />
+            <Skeleton className="h-56 rounded-2xl" />
           </>
         ) : (
           <>
@@ -257,7 +425,7 @@ export default function Review() {
               </div>
             )}
 
-            {/* ── REVEALED STATE ── */}
+            {/* ── REVEALED ── */}
             {areRevealed && (
               <>
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-4">
@@ -278,10 +446,18 @@ export default function Review() {
                 {reviewData?.cleanerReview && (
                   <ReviewCard review={reviewData.cleanerReview} role="cleaner" />
                 )}
+
+                {/* Trust impact panel */}
+                {reviewData?.customerReview && enrichedCleaner && (
+                  <TrustImpactPanel
+                    customerReview={reviewData.customerReview}
+                    cleaner={enrichedCleaner}
+                  />
+                )}
               </>
             )}
 
-            {/* ── WAITING STATE (submitted, other side pending) ── */}
+            {/* ── SEALED / WAITING ── */}
             {!areRevealed && hasSubmitted && (
               <>
                 <div className="flex flex-col items-center text-center py-8 px-4 bg-card border border-border rounded-2xl gap-4">
@@ -294,7 +470,6 @@ export default function Review() {
                       Your review is safely sealed. It will only be revealed once your cleaner submits theirs — or automatically after 7 days.
                     </p>
                   </div>
-
                   {revealAt && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-xl px-4 py-2.5">
                       <Clock size={13} className="text-primary" />
@@ -304,9 +479,7 @@ export default function Review() {
                 </div>
 
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col gap-2.5">
-                  <p className="text-xs font-bold text-primary uppercase tracking-wide">
-                    Why double-blind?
-                  </p>
+                  <p className="text-xs font-bold text-primary uppercase tracking-wide">Why double-blind?</p>
                   {[
                     "Prevents retaliation — no one fears a bad review triggers one back",
                     "Incentivises honesty — neither party knows what the other wrote",
@@ -321,10 +494,9 @@ export default function Review() {
               </>
             )}
 
-            {/* ── REVIEW FORM ── */}
+            {/* ── FORM ── */}
             {!areRevealed && !hasSubmitted && (
               <>
-                {/* Double-blind info */}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
                   <div className="flex items-center gap-2 mb-1.5">
                     <Eye size={14} className="text-primary" />
@@ -335,7 +507,6 @@ export default function Review() {
                   </p>
                 </div>
 
-                {/* Category ratings */}
                 <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-5">
                   <p className="text-xs font-bold text-foreground uppercase tracking-wide">Rate your cleaner</p>
                   {CATEGORIES.map((cat) => (
@@ -347,7 +518,7 @@ export default function Review() {
                         </div>
                         {ratings[cat.id] ? (
                           <span className="text-sm font-bold text-amber-600">
-                            {["", "Poor", "Fair", "Good", "Great", "Excellent"][ratings[cat.id]]}
+                            {VERBAL[ratings[cat.id]]}
                           </span>
                         ) : (
                           <span className="text-[10px] text-muted-foreground">Tap to rate</span>
@@ -361,7 +532,6 @@ export default function Review() {
                   ))}
                 </div>
 
-                {/* Would book again */}
                 <div className="bg-card border border-border rounded-2xl p-4">
                   <p className="text-sm font-bold text-foreground mb-3">
                     Would you book {cleaner?.fullName?.split(" ")[0] || "this cleaner"} again?
@@ -393,11 +563,9 @@ export default function Review() {
                   </div>
                 </div>
 
-                {/* Comment */}
                 <div>
                   <label className="text-sm font-bold text-foreground mb-2 block">
-                    Written review{" "}
-                    <span className="text-muted-foreground font-normal">(optional)</span>
+                    Written review <span className="text-muted-foreground font-normal">(optional)</span>
                   </label>
                   <textarea
                     data-testid="input-review-comment"
@@ -417,19 +585,15 @@ export default function Review() {
       {/* Fixed footer */}
       {!isLoading && (
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pb-8 pt-3 bg-background/95 backdrop-blur border-t border-border">
-          {areRevealed ? (
+          {areRevealed || hasSubmitted ? (
             <button
               data-testid="button-back-bookings"
               onClick={() => setLocation("/bookings")}
-              className="w-full bg-primary text-primary-foreground rounded-2xl py-4 font-bold text-sm"
-            >
-              Back to Bookings
-            </button>
-          ) : hasSubmitted ? (
-            <button
-              data-testid="button-back-bookings"
-              onClick={() => setLocation("/bookings")}
-              className="w-full bg-muted text-foreground rounded-2xl py-4 font-bold text-sm"
+              className={`w-full rounded-2xl py-4 font-bold text-sm ${
+                areRevealed
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
+              }`}
             >
               Back to Bookings
             </button>
