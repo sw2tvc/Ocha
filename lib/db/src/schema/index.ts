@@ -6,3 +6,4 @@ export * from "./bookings";
 export * from "./reviews";
 export * from "./notifications";
 export * from "./disputes";
+export * from "./messages";

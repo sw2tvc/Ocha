@@ -249,6 +249,17 @@ export default function BookingDetail() {
             </button>
           )}
 
+          {/* Message cleaner */}
+          {["accepted", "en_route", "in_progress", "completed", "disputed"].includes(status) && (
+            <button
+              onClick={() => setLocation(`/bookings/${b.id}/messages`)}
+              className="w-full flex items-center justify-center gap-2 border border-primary/30 text-primary rounded-2xl py-3 font-semibold text-sm hover:bg-primary/5 transition-colors"
+            >
+              <MessageCircle size={15} />
+              Message {(b as any).cleaner?.fullName?.split(" ")[0] || "Cleaner"}
+            </button>
+          )}
+
           {/* View / raise dispute */}
           {status === "disputed" && (
             <button

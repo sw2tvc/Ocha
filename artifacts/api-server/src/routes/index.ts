@@ -11,6 +11,7 @@ import notificationsRouter from "./notifications";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
 import disputesRouter from "./disputes";
+import messagesRouter from "./messages";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(notificationsRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
 router.use(disputesRouter);
+router.use(messagesRouter);
 
 export default router;

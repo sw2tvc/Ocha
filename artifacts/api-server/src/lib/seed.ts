@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { usersTable, cleanersTable, propertiesTable, notificationsTable, bookingsTable, disputesTable } from "@workspace/db";
+import { usersTable, cleanersTable, propertiesTable, notificationsTable, bookingsTable, disputesTable, messagesTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -280,6 +280,105 @@ export async function seedNotifications() {
     logger.info("Notifications seeded.");
   } catch (err) {
     logger.error({ err }, "Failed to seed notifications");
+  }
+}
+
+export async function seedMessages() {
+  try {
+    const existing = await db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.id, "msg-seed-1"))
+      .limit(1);
+    if (existing.length > 0) return;
+
+    const base = Date.now() - 13 * 86400000; /* ~13 days ago — same booking window */
+    await db.insert(messagesTable).values([
+      /* James → Sarah (cleaner confirmed) */
+      {
+        id: "msg-seed-1",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-cleaner-2",
+        recipientId: "user-demo-1",
+        content: "Hi Sarah! Just confirming I'll be there at 9am on Saturday for the deep clean at Hackney. Anything you'd like me to focus on?",
+        isRead: true,
+        createdAt: new Date(base),
+      },
+      /* Sarah → James */
+      {
+        id: "msg-seed-2",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-demo-1",
+        recipientId: "user-cleaner-2",
+        content: "Hi James! Yes — the oven and the bathroom tiles are the priority. The kids have been grubby all week 😅 Thank you for checking in!",
+        isRead: true,
+        createdAt: new Date(base + 15 * 60000),
+      },
+      /* James → Sarah */
+      {
+        id: "msg-seed-3",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-cleaner-2",
+        recipientId: "user-demo-1",
+        content: "Perfect, I'll bring the proper oven cleaner and limescale remover. See you Saturday!",
+        isRead: true,
+        createdAt: new Date(base + 20 * 60000),
+      },
+      /* Day of booking — Sarah → James (day-of check-in) */
+      {
+        id: "msg-seed-4",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-demo-1",
+        recipientId: "user-cleaner-2",
+        content: "Morning James! Spare key is under the blue pot outside the front door. I'll be back around 1pm. Let me know if you need anything.",
+        isRead: true,
+        createdAt: new Date(base + 7 * 86400000 + 8 * 3600000),
+      },
+      /* James → Sarah (done) */
+      {
+        id: "msg-seed-5",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-cleaner-2",
+        recipientId: "user-demo-1",
+        content: "All done! Oven is sparkling, tiles look great. Left the key back under the pot. Hope you're happy with it — was a pleasure! ✨",
+        isRead: true,
+        createdAt: new Date(base + 7 * 86400000 + 13 * 3600000),
+      },
+      /* Sarah → James (reply) */
+      {
+        id: "msg-seed-6",
+        bookingId: "dc4ffc62-db75-42b7-8bfd-a8378a11e2d3",
+        senderId: "user-demo-1",
+        recipientId: "user-cleaner-2",
+        content: "James this looks amazing, thank you!! The oven hasn't been this clean in years 😍",
+        isRead: true,
+        createdAt: new Date(base + 7 * 86400000 + 13 * 3600000 + 5 * 60000),
+      },
+      /* Disputed booking — Sarah's opening message */
+      {
+        id: "msg-seed-7",
+        bookingId: "booking-disputed-1",
+        senderId: "user-demo-1",
+        recipientId: "user-cleaner-2",
+        content: "Hi James, I've just got home and the oven and bathroom tiles haven't been touched. I thought we agreed those were priorities?",
+        isRead: true,
+        createdAt: new Date(Date.now() - 3 * 86400000 + 14 * 3600000),
+      },
+      /* James → Sarah (disputed booking) */
+      {
+        id: "msg-seed-8",
+        bookingId: "booking-disputed-1",
+        senderId: "user-cleaner-2",
+        recipientId: "user-demo-1",
+        content: "Hi Sarah, I spent 2 hours there and cleaned what I could. The oven needed specialist products I didn't have. I'm sorry it didn't meet expectations.",
+        isRead: true,
+        createdAt: new Date(Date.now() - 3 * 86400000 + 15 * 3600000),
+      },
+    ]).onConflictDoNothing();
+
+    logger.info("Demo messages seeded.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed messages");
   }
 }
 
