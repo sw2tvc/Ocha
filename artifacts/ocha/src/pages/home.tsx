@@ -5,6 +5,7 @@ import { useListCleaners, useGetNearbyAvailability, getListCleanersQueryKey } fr
 import { CleanerCard } from "@/components/cleaner-card";
 import { CleanerCardSkeleton } from "@/components/skeleton-loader";
 import { CleanerMap } from "@/components/cleaner-map";
+import { UpcomingBookingCard } from "@/components/upcoming-booking-card";
 import { MOCK_CLEANERS } from "@/lib/mock-data";
 
 const SERVICE_TYPES = [
@@ -65,6 +66,9 @@ export default function Home() {
       </div>
 
       <div className="max-w-md mx-auto w-full px-4 -mt-4 flex flex-col gap-5">
+        {/* ── Upcoming booking live card ── */}
+        <UpcomingBookingCard />
+
         {/* ── Search card ── */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-4 flex flex-col gap-4">
           {/* Location */}
