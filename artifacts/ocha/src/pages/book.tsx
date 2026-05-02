@@ -29,9 +29,15 @@ export default function Book() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const prefillProperty = params.get("propertyId") || "";
+  const prefillService = params.get("serviceType") || "standard";
+  const isRebook = !!(params.get("propertyId") || params.get("serviceType"));
+
   const [step, setStep] = useState(1);
-  const [selectedProperty, setSelectedProperty] = useState<string>("");
-  const [selectedService, setSelectedService] = useState("standard");
+  const [selectedProperty, setSelectedProperty] = useState<string>(prefillProperty);
+  const [selectedService, setSelectedService] = useState(
+    SERVICES.find((s) => s.id === prefillService) ? prefillService : "standard"
+  );
   const [selectedUrgency, setSelectedUrgency] = useState("standard");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("10:00");
@@ -109,8 +115,8 @@ export default function Book() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-base font-bold">Book a Clean</h1>
-            <p className="text-xs text-muted-foreground">Step {step} of 3</p>
+            <h1 className="text-base font-bold">{isRebook ? "Rebook a Clean" : "Book a Clean"}</h1>
+            <p className="text-xs text-muted-foreground">Step {step} of 3{isRebook ? " · Pre-filled from last booking" : ""}</p>
           </div>
         </div>
         <div className="max-w-md mx-auto mt-3">
