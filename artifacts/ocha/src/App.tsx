@@ -19,6 +19,7 @@ import Notifications from "@/pages/notifications";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import BecomeCleaner from "@/pages/become-cleaner";
+import CleanerAvailability from "@/pages/cleaner-availability";
 import DisputePage from "@/pages/dispute";
 import MessagesPage from "@/pages/messages";
 import CleanerDashboard from "@/pages/cleaner-dashboard";
@@ -56,6 +57,7 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/become-a-cleaner" component={BecomeCleaner} />
         <Route path="/bookings/:bookingId/dispute" component={DisputePage} />
+        <Route path="/cleaner-dashboard/availability" component={CleanerAvailability} />
         <Route path="/bookings/:bookingId/messages" component={MessagesPage} />
         <Route path="/cleaner-dashboard" component={CleanerDashboard} />
         <Route path="/admin" component={Admin} />

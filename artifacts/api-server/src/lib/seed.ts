@@ -429,6 +429,61 @@ export async function seedDisputedBooking() {
   }
 }
 
+export async function seedAvailability() {
+  try {
+    const { cleanerAvailabilityTable } = await import("@workspace/db");
+    const now = new Date();
+    const yr = now.getFullYear();
+    const mo = now.getMonth() + 1;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dateStr = (d: number) => `${yr}-${pad(mo)}-${pad(d)}`;
+
+    /* Build a realistic blocked schedule for cleaner-1 (Amara) */
+    const blockedDates = [
+      /* Weekend days — block a few non-weekend days too */
+      { date: dateStr(8), reason: "holiday" },
+      { date: dateStr(9), reason: "holiday" },
+      { date: dateStr(15), reason: "personal" },
+      { date: dateStr(22), reason: "fully_booked" },
+      { date: dateStr(23), reason: "fully_booked" },
+      /* Next month same cleaner */
+      { date: `${yr}-${pad(mo === 12 ? 1 : mo + 1)}-03`, reason: "holiday" },
+      { date: `${yr}-${pad(mo === 12 ? 1 : mo + 1)}-04`, reason: "holiday" },
+      { date: `${yr}-${pad(mo === 12 ? 1 : mo + 1)}-05`, reason: "holiday" },
+    ].filter((d) => {
+      /* Don't block past dates or today */
+      return new Date(d.date) > now;
+    });
+
+    for (const { date, reason } of blockedDates) {
+      const id = `avail-cleaner-1-${date}`;
+      await db
+        .insert(cleanerAvailabilityTable)
+        .values({ id, cleanerId: "cleaner-1", date, isBlocked: true, reason })
+        .onConflictDoNothing();
+    }
+
+    /* A couple of blocks for cleaner-2 (James) */
+    const jamesBlocked = [
+      { date: dateStr(12), reason: "personal" },
+      { date: dateStr(19), reason: "holiday" },
+      { date: dateStr(20), reason: "holiday" },
+    ].filter((d) => new Date(d.date) > now);
+
+    for (const { date, reason } of jamesBlocked) {
+      const id = `avail-cleaner-2-${date}`;
+      await db
+        .insert(cleanerAvailabilityTable)
+        .values({ id, cleanerId: "cleaner-2", date, isBlocked: true, reason })
+        .onConflictDoNothing();
+    }
+
+    logger.info("Availability seed complete.");
+  } catch (err) {
+    logger.error({ err }, "Failed to seed availability");
+  }
+}
+
 export async function seedEnRouteBooking() {
   try {
     const existing = await db

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Power, ChevronRight, TrendingUp, Star, Clock } from "lucide-react";
+import { Power, ChevronRight, TrendingUp, Star, Clock, CalendarDays } from "lucide-react";
 import { useGetCleanerDashboard, useToggleCleanerAvailability, getGetCleanerDashboardQueryKey } from "@workspace/api-client-react";
 import { BookingStatusPill } from "@/components/booking-status";
 import { TrustScoreRing } from "@/components/trust-badge";
@@ -183,6 +183,18 @@ export default function CleanerDashboard() {
               >
                 <Clock size={18} className="text-primary" />
                 <span className="text-sm font-semibold">All Jobs</span>
+              </button>
+              <button
+                data-testid="button-manage-availability"
+                onClick={() => setLocation("/cleaner-dashboard/availability")}
+                className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 col-span-2"
+              >
+                <CalendarDays size={18} className="text-primary" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold">Manage Availability</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Block dates you can't work</p>
+                </div>
+                <ChevronRight size={15} className="text-muted-foreground ml-auto" />
               </button>
             </div>
           </>

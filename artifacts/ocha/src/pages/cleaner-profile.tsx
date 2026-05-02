@@ -11,7 +11,11 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   useGetCleaner,
   useGetCleanerReviews,
@@ -270,6 +274,125 @@ function ReviewCard({
 }
 
 /* ════════════════════════════════════ PAGE ════════════════════════════════════ */
+/* ── Mini availability calendar (read-only, customer view) ──────── */
+type DayStatus = "available" | "blocked" | "booked" | "past";
+interface CalDay { date: string; status: DayStatus }
+
+const MINI_DAY_HEADERS = ["M", "T", "W", "T", "F", "S", "S"];
+
+function AvailabilityWidget({ cleanerId }: { cleanerId: string }) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+
+  const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+
+  const { data, isLoading } = useQuery<{ days: CalDay[]; nextAvailable?: string }>({
+    queryKey: ["cleaner-cal-ro", cleanerId, monthStr],
+    queryFn: async () => {
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/cleaners/${cleanerId}/calendar?month=${monthStr}`
+      );
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const days = data?.days || [];
+  const firstDate = days[0]?.date;
+  const startPad = firstDate
+    ? (() => { const dow = new Date(firstDate + "T00:00:00").getDay(); return dow === 0 ? 6 : dow - 1; })()
+    : 0;
+  const grid: (CalDay | null)[] = [...Array(startPad).fill(null), ...days];
+  while (grid.length % 7 !== 0) grid.push(null);
+
+  const monthLabel = new Date(year, month - 1, 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
+
+  const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
+
+  const nextAvailable = data?.nextAvailable
+    ? new Date(data.nextAvailable + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+    : null;
+
+  return (
+    <div className="px-4 mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <CalendarDays size={12} className="text-primary" />
+          Availability
+        </h2>
+        {nextAvailable && (
+          <span className="text-[10px] text-primary font-medium">Next: {nextAvailable}</span>
+        )}
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-3">
+        {/* Month nav */}
+        <div className="flex items-center justify-between mb-2.5">
+          <button onClick={prevMonth} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+            <ChevronLeft size={12} />
+          </button>
+          <p className="text-xs font-semibold text-foreground">{monthLabel}</p>
+          <button onClick={nextMonth} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+            <ChevronRight size={12} />
+          </button>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 gap-0.5 mb-0.5">
+          {MINI_DAY_HEADERS.map((d, i) => (
+            <div key={i} className="text-center text-[8px] font-bold text-muted-foreground/60 uppercase py-0.5">{d}</div>
+          ))}
+        </div>
+
+        {/* Grid */}
+        {isLoading ? (
+          <div className="h-24 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-0.5">
+            {grid.map((day, i) => {
+              if (!day) return <div key={`pad-${i}`} />;
+              const dayNum = Number(day.date.split("-")[2]);
+              const colors: Record<DayStatus, string> = {
+                available: "bg-primary/10 text-primary",
+                blocked:   "bg-muted text-muted-foreground/40",
+                booked:    "bg-amber-50 text-amber-600",
+                past:      "text-muted-foreground/25",
+              };
+              return (
+                <div
+                  key={day.date}
+                  className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium ${colors[day.status]}`}
+                >
+                  {dayNum}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border flex-wrap">
+          {[
+            { dot: "bg-primary/50", label: "Available" },
+            { dot: "bg-muted-foreground/30", label: "Unavailable" },
+            { dot: "bg-amber-400", label: "Booked" },
+          ].map((l) => (
+            <div key={l.label} className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-sm ${l.dot}`} />
+              <span className="text-[9px] text-muted-foreground">{l.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CleanerProfile() {
   const { cleanerId } = useParams();
   const [, setLocation] = useLocation();
@@ -451,7 +574,7 @@ export default function CleanerProfile() {
           )}
 
           {/* Service area */}
-          <div className="px-4 mb-6">
+          <div className="px-4 mb-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-xl px-3 py-2">
               <MapPin size={13} />
               <span>
@@ -460,6 +583,9 @@ export default function CleanerProfile() {
               </span>
             </div>
           </div>
+
+          {/* ── Availability mini-calendar ── */}
+          <AvailabilityWidget cleanerId={cleanerId!} />
 
           {/* ── Reviews section ── */}
           <div className="px-4 mb-6">
