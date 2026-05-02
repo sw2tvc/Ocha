@@ -94,7 +94,24 @@ router.get("/dashboard/cleaner", async (req, res) => {
     ["accepted", "en_route"].includes(b.status) && new Date(b.scheduledAt) > now
   ).slice(0, 5);
 
-  const pendingRequests = allBookings.filter((b) => b.status === "pending").slice(0, 5);
+  const rawPending = allBookings.filter((b) => b.status === "pending").slice(0, 10);
+
+  /* Hydrate pending requests with customer + property info */
+  const pendingRequests = await Promise.all(
+    rawPending.map(async (b) => {
+      const [customerRow, propertyRow] = await Promise.all([
+        db.select({ fullName: usersTable.fullName, avatarUrl: usersTable.avatarUrl })
+          .from(usersTable).where(eq(usersTable.id, b.customerId)).limit(1),
+        db.select({ name: propertiesTable.name, addressLine1: propertiesTable.addressLine1, city: propertiesTable.city })
+          .from(propertiesTable).where(eq(propertiesTable.id, b.propertyId)).limit(1),
+      ]);
+      return {
+        ...b,
+        customer: customerRow[0] || null,
+        property: propertyRow[0] || null,
+      };
+    })
+  );
 
   const weeklyBookings = allBookings.filter((b) => b.status === "completed" && new Date(b.scheduledAt) >= weekStart);
   const monthlyBookings = allBookings.filter((b) => b.status === "completed" && new Date(b.scheduledAt) >= monthStart);
