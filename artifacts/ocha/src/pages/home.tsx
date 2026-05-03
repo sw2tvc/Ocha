@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { MapPin, ChevronRight, Zap, Clock, Sparkles, ArrowRight, List, Map } from "lucide-react";
+import { MapPin, ChevronRight, Zap, Clock, Sparkles, ArrowRight, List, Map, ShieldCheck } from "lucide-react";
 import { useListCleaners, useGetNearbyAvailability, getListCleanersQueryKey } from "@workspace/api-client-react";
 import { CleanerCard } from "@/components/cleaner-card";
 import { CleanerCardSkeleton } from "@/components/skeleton-loader";
@@ -9,10 +9,10 @@ import { UpcomingBookingCard } from "@/components/upcoming-booking-card";
 import { MOCK_CLEANERS } from "@/lib/mock-data";
 
 const SERVICE_TYPES = [
-  { id: "standard",        label: "Standard",         icon: Sparkles,  desc: "Regular clean" },
-  { id: "deep_clean",      label: "Deep Clean",        icon: Zap,       desc: "Thorough top-to-bottom" },
-  { id: "airbnb_turnover", label: "Airbnb",            icon: Clock,     desc: "Fast turnover" },
-  { id: "end_of_tenancy",  label: "End of Tenancy",    icon: ArrowRight, desc: "Move out clean" },
+  { id: "standard",        label: "Standard",       icon: Sparkles,   desc: "Regular clean" },
+  { id: "deep_clean",      label: "Deep Clean",     icon: Zap,        desc: "Thorough top-to-bottom" },
+  { id: "airbnb_turnover", label: "Airbnb",         icon: Clock,      desc: "Fast turnover" },
+  { id: "end_of_tenancy",  label: "End of Tenancy", icon: ArrowRight, desc: "Move out clean" },
 ];
 
 const URGENCY_OPTIONS = [
@@ -48,10 +48,11 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen pb-20 bg-background">
-      {/* ── Header ── */}
-      <div className="bg-primary text-primary-foreground px-5 pt-14 pb-8">
-        <div className="max-w-md mx-auto">
+    <div className="flex flex-col min-h-screen pb-20 md:pb-8 bg-background">
+
+      {/* ── Header ───────────────────────────────────────────── */}
+      <div className="bg-primary text-primary-foreground px-5 pt-14 md:pt-8 pb-8">
+        <div className="max-w-md mx-auto md:max-w-none">
           <p className="text-primary-foreground/60 text-xs font-medium tracking-widest uppercase mb-1">Ocha</p>
           <h1 className="text-2xl font-bold leading-tight mb-1">Find a trusted cleaner nearby</h1>
           {nearbyCount > 0 && (
@@ -65,13 +66,13 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto w-full px-4 -mt-4 flex flex-col gap-5">
-        {/* ── Upcoming booking live card ── */}
+      {/* ══════════ MOBILE LAYOUT (< md) ══════════════════════ */}
+      <div className="md:hidden max-w-md mx-auto w-full px-4 -mt-4 flex flex-col gap-5">
+
         <UpcomingBookingCard />
 
-        {/* ── Search card ── */}
+        {/* Search card */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-4 flex flex-col gap-4">
-          {/* Location */}
           <div>
             <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1.5 block">Location</label>
             <div className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2.5">
@@ -86,7 +87,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Service type */}
           <div>
             <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1.5 block">Service</label>
             <div className="grid grid-cols-2 gap-2">
@@ -113,7 +113,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Urgency */}
           <div>
             <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1.5 block">When</label>
             <div className="flex gap-2">
@@ -145,12 +144,11 @@ export default function Home() {
           </button>
         </div>
 
-        {/* ── Nearby section with list/map toggle ── */}
+        {/* Nearby section with list/map toggle */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Available Now</h2>
             <div className="flex items-center gap-2">
-              {/* List / Map toggle */}
               <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
                 <button
                   onClick={() => setViewMode("list")}
@@ -183,7 +181,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── Map view ── */}
           {viewMode === "map" && (
             <div className="flex flex-col gap-3">
               {isLoading ? (
@@ -197,7 +194,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── List view ── */}
           {viewMode === "list" && (
             <div className="flex flex-col gap-3">
               {isLoading
@@ -210,7 +206,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* ── Trust callout ── */}
+        {/* Trust callout */}
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -222,6 +218,154 @@ export default function Home() {
             Every cleaner on Ocha is identity-checked and reputation-scored. Your trust score grows with every reliable interaction.
           </p>
         </div>
+      </div>
+
+      {/* ══════════ DESKTOP LAYOUT (md+) ══════════════════════ */}
+      <div className="hidden md:flex gap-6 px-6 py-6 -mt-4 items-start">
+
+        {/* LEFT: geographic map panel — visible on xl+ */}
+        <aside className="hidden xl:flex flex-col gap-4 w-[260px] shrink-0 sticky top-6 self-start">
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nearby</p>
+              {nearbyCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-[10px] font-medium text-muted-foreground">{nearbyCount} available</span>
+                </div>
+              )}
+            </div>
+            <CleanerMap cleaners={cleaners as any[]} height={300} />
+            <div className="px-4 py-2 border-t border-border">
+              <p className="text-[10px] text-muted-foreground">Click a pin to view profile</p>
+            </div>
+          </div>
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <ShieldCheck size={14} className="text-primary shrink-0" />
+              <span className="text-xs font-bold text-primary uppercase tracking-wide">Identity-verified</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Every cleaner is identity-checked and reputation-scored before joining Ocha.
+            </p>
+          </div>
+        </aside>
+
+        {/* CENTRE: cleaner discovery feed */}
+        <div className="flex-1 min-w-0 flex flex-col gap-5">
+
+          {/* Service type + urgency selector */}
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-bold text-foreground uppercase tracking-wide">Service Type</p>
+              <div className="flex bg-muted rounded-lg p-0.5">
+                {URGENCY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setSelectedUrgency(opt.id)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      selectedUrgency === opt.id
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {SERVICE_TYPES.map((type) => {
+                const Icon = type.icon;
+                const isSelected = selectedService === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    data-testid={`button-service-${type.id}-desktop`}
+                    onClick={() => setSelectedService(type.id)}
+                    className={`flex flex-col items-start px-3 py-3 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border bg-background text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <Icon size={15} strokeWidth={2} className="mb-1.5" />
+                    <span className="text-xs font-semibold leading-tight">{type.label}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">{type.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Available cleaners */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Available Now</h2>
+              <button
+                onClick={() => setLocation("/cleaners")}
+                className="text-xs text-primary font-medium flex items-center gap-0.5 hover:underline"
+              >
+                Browse all <ChevronRight size={12} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              {isLoading
+                ? Array(4).fill(0).map((_, i) => <CleanerCardSkeleton key={i} />)
+                : cleaners.filter((c) => c.isAvailable).slice(0, 6).map((cleaner) => (
+                    <CleanerCard key={cleaner.id} cleaner={cleaner as any} />
+                  ))
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: booking panel — visible on lg+ */}
+        <aside className="hidden lg:flex flex-col gap-4 w-[252px] shrink-0 sticky top-6 self-start">
+
+          <UpcomingBookingCard />
+
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-4 flex flex-col gap-3">
+            <p className="text-xs font-bold text-foreground uppercase tracking-wide">Book a Clean</p>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-1.5 block">Location</label>
+              <div className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2">
+                <MapPin size={13} className="text-primary shrink-0" />
+                <input
+                  data-testid="input-location-desktop"
+                  className="bg-transparent text-xs flex-1 outline-none text-foreground placeholder:text-muted-foreground"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  placeholder="Your location"
+                />
+              </div>
+            </div>
+            <button
+              data-testid="button-search-cleaners-desktop"
+              onClick={handleSearch}
+              className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 font-semibold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5"
+            >
+              Find Cleaners <ChevronRight size={13} />
+            </button>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <p className="text-xs font-semibold text-foreground">{nearbyCount} cleaners nearby</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              ~{waitTime} min average arrival · Identity-verified only
+            </p>
+            <button
+              onClick={() => setLocation("/cleaners")}
+              className="mt-1 flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+            >
+              <Zap size={12} />
+              Book for today
+            </button>
+          </div>
+        </aside>
       </div>
     </div>
   );

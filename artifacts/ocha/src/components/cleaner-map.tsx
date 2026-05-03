@@ -182,12 +182,13 @@ function CleanerSheet({ cleaner, onClose }: { cleaner: any; onClose: () => void 
 interface CleanerMapProps {
   cleaners: any[];
   className?: string;
+  height?: number;
 }
 
 const USER_LAT = 51.522;
 const USER_LNG = -0.075;
 
-export function CleanerMap({ cleaners, className }: CleanerMapProps) {
+export function CleanerMap({ cleaners, className, height = 320 }: CleanerMapProps) {
   const [selected, setSelected] = useState<any>(null);
 
   const withLocation = cleaners.filter(
@@ -213,7 +214,7 @@ export function CleanerMap({ cleaners, className }: CleanerMapProps) {
       <MapContainer
         center={[USER_LAT, USER_LNG]}
         zoom={13}
-        style={{ height: "320px", width: "100%" }}
+        style={{ height: `${height}px`, width: "100%" }}
         zoomControl={false}
         scrollWheelZoom={false}
         attributionControl={true}

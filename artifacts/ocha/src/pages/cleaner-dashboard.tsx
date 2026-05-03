@@ -98,28 +98,20 @@ function PendingRequestCard({
 
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
-      {/* "New request" banner */}
       <div className="bg-amber-400/20 px-4 py-1.5 flex items-center gap-1.5 border-b border-amber-200">
         <Bell size={10} className="text-amber-700" />
         <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">New request</span>
       </div>
 
       <div className="p-4 flex flex-col gap-3">
-        {/* Customer + job info */}
         <div className="flex items-start gap-3">
-          {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
             {booking.customer?.avatarUrl ? (
-              <img
-                src={booking.customer.avatarUrl}
-                alt={customerName}
-                className="w-10 h-10 rounded-full object-cover"
-              />
+              <img src={booking.customer.avatarUrl} alt={customerName} className="w-10 h-10 rounded-full object-cover" />
             ) : (
               <span className="text-sm font-bold text-primary">{customerInitial}</span>
             )}
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-bold text-foreground truncate">{customerName}</p>
@@ -129,7 +121,6 @@ function PendingRequestCard({
           </div>
         </div>
 
-        {/* Details */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center gap-1.5 bg-card border border-border/60 rounded-xl px-3 py-2">
             <Clock size={12} className="text-primary shrink-0" />
@@ -149,7 +140,6 @@ function PendingRequestCard({
           </div>
         </div>
 
-        {/* CTA */}
         {!showDecline ? (
           <div className="flex gap-2">
             <button
@@ -178,7 +168,6 @@ function PendingRequestCard({
             </button>
           </div>
         ) : (
-          /* Decline confirmation */
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-destructive">Decline this request?</p>
             <p className="text-[10px] text-muted-foreground">The customer will be notified. This cannot be undone.</p>
@@ -248,7 +237,6 @@ export default function CleanerDashboard() {
     try { await declineMutation.mutateAsync(bookingId); } finally { setActingId(null); }
   };
 
-  // Extract each field defensively so a partial API response never crashes the UI
   const d = data as any;
   const pendingRequests: any[] = d?.pendingRequests ?? [];
   const todayBookings: any[]   = d?.todayBookings   ?? [];
@@ -267,11 +255,75 @@ export default function CleanerDashboard() {
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+  /* ── shared blocks (rendered in both layouts) ── */
+
+  const AvailabilityToggle = () => (
+    <div className={cn(
+      "rounded-2xl border p-5 flex items-center justify-between transition-colors shadow-sm",
+      isOnline ? "bg-primary/5 border-primary/30" : "bg-card border-border"
+    )}>
+      <div>
+        <p className="text-sm font-bold text-foreground">
+          {isOnline ? "You are online" : "You are offline"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {isOnline ? "Accepting new bookings" : "Not receiving requests"}
+        </p>
+      </div>
+      <button
+        data-testid="button-toggle-availability"
+        onClick={handleToggle}
+        disabled={toggleAvailability.isPending}
+        className={cn(
+          "w-16 h-8 rounded-full transition-all duration-300 flex items-center relative",
+          isOnline ? "bg-primary justify-end" : "bg-muted justify-start"
+        )}
+      >
+        <div className="w-7 h-7 rounded-full bg-white shadow-sm mx-0.5 transition-all flex items-center justify-center">
+          <Power size={12} className={isOnline ? "text-primary" : "text-muted-foreground"} />
+        </div>
+      </button>
+    </div>
+  );
+
+  const EarningsSummary = () => (
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-3">Earnings</p>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "This week",  value: `£${dashboard.thisWeekEarnings}` },
+          { label: "This month", value: `£${dashboard.thisMonthEarnings}` },
+          { label: "Jobs done",  value: String(dashboard.completedThisMonth) },
+        ].map((item) => (
+          <div key={item.label} className="text-center">
+            <p className="text-lg font-bold text-foreground" data-testid={`metric-${item.label}`}>{item.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
+        <Star size={13} className="text-amber-500" />
+        <span className="text-xs font-semibold">
+          {dashboard.averageRating > 0 ? `${dashboard.averageRating} avg rating` : "No ratings yet"}
+        </span>
+        {dashboard.pendingReviews > 0 && (
+          <span className="text-xs text-primary font-medium ml-auto">
+            {dashboard.pendingReviews} pending reviews
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen pb-20 bg-background">
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground px-4 pt-14 pb-8">
-        <div className="max-w-md mx-auto">
+    <div className="flex flex-col min-h-screen pb-20 md:pb-8 bg-background">
+
+      {/* ── Header ── */}
+      <div className="bg-primary text-primary-foreground px-4 pt-14 md:pt-8 pb-8">
+        <div className="max-w-md mx-auto md:max-w-none">
           <p className="text-primary-foreground/60 text-xs font-medium tracking-widest uppercase mb-1">Cleaner</p>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">My Dashboard</h1>
@@ -288,47 +340,19 @@ export default function CleanerDashboard() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto w-full px-4 -mt-4 flex flex-col gap-4">
-        {/* Availability toggle */}
-        <div className={cn(
-          "rounded-2xl border p-5 flex items-center justify-between transition-colors shadow-sm",
-          isOnline ? "bg-primary/5 border-primary/30" : "bg-card border-border"
-        )}>
-          <div>
-            <p className="text-sm font-bold text-foreground">
-              {isOnline ? "You are online" : "You are offline"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isOnline ? "Accepting new bookings" : "Not receiving requests"}
-            </p>
-          </div>
-          <button
-            data-testid="button-toggle-availability"
-            onClick={handleToggle}
-            disabled={toggleAvailability.isPending}
-            className={cn(
-              "w-16 h-8 rounded-full transition-all duration-300 flex items-center relative",
-              isOnline ? "bg-primary justify-end" : "bg-muted justify-start"
-            )}
-          >
-            <div className="w-7 h-7 rounded-full bg-white shadow-sm mx-0.5 transition-all flex items-center justify-center">
-              <Power size={12} className={isOnline ? "text-primary" : "text-muted-foreground"} />
-            </div>
-          </button>
-        </div>
+      {/* ══════════ MOBILE LAYOUT (< md) ══════════════════════ */}
+      <div className="md:hidden max-w-md mx-auto w-full px-4 -mt-4 flex flex-col gap-4">
+        <AvailabilityToggle />
 
         {isLoading ? (
           <Skeleton className="h-28 rounded-2xl" />
         ) : (
           <>
-            {/* ── Pending booking requests ── */}
             {pendingCount > 0 && (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wide">
-                    New Requests
-                  </h2>
-                  <span className="text-[10px] text-muted-foreground">Respond within 24h to keep your score high</span>
+                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wide">New Requests</h2>
+                  <span className="text-[10px] text-muted-foreground">Respond within 24h</span>
                 </div>
                 {pendingRequests.map((booking) => (
                   <PendingRequestCard
@@ -342,33 +366,8 @@ export default function CleanerDashboard() {
               </div>
             )}
 
-            {/* Earnings summary */}
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-3">Earnings</p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "This week",  value: `£${dashboard.thisWeekEarnings}` },
-                  { label: "This month", value: `£${dashboard.thisMonthEarnings}` },
-                  { label: "Jobs done",  value: String(dashboard.completedThisMonth) },
-                ].map((item) => (
-                  <div key={item.label} className="text-center">
-                    <p className="text-lg font-bold text-foreground" data-testid={`metric-${item.label}`}>{item.value}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
-                <Star size={13} className="text-amber-500" />
-                <span className="text-xs font-semibold">{dashboard.averageRating > 0 ? `${dashboard.averageRating} avg rating` : "No ratings yet"}</span>
-                {dashboard.pendingReviews > 0 && (
-                  <span className="text-xs text-primary font-medium ml-auto">
-                    {dashboard.pendingReviews} pending reviews
-                  </span>
-                )}
-              </div>
-            </div>
+            <EarningsSummary />
 
-            {/* Today's jobs */}
             {todayBookings.length > 0 && (
               <div>
                 <h2 className="text-xs font-bold text-foreground uppercase tracking-wide mb-2">Today</h2>
@@ -392,7 +391,6 @@ export default function CleanerDashboard() {
               </div>
             )}
 
-            {/* Nav buttons */}
             <div className="grid grid-cols-2 gap-3">
               <button
                 data-testid="button-view-earnings"
@@ -425,6 +423,133 @@ export default function CleanerDashboard() {
             </div>
           </>
         )}
+      </div>
+
+      {/* ══════════ DESKTOP LAYOUT (md+) ══════════════════════ */}
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-[5fr_6fr] gap-6 px-6 py-6 -mt-4">
+
+        {/* LEFT: status + earnings + pending requests */}
+        <div className="flex flex-col gap-4">
+          <AvailabilityToggle />
+
+          {isLoading ? (
+            <>
+              <Skeleton className="h-28 rounded-2xl" />
+              <Skeleton className="h-40 rounded-2xl" />
+            </>
+          ) : (
+            <>
+              <EarningsSummary />
+
+              {pendingCount > 0 && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-bold text-foreground uppercase tracking-wide">New Requests</h2>
+                    <span className="text-[10px] text-muted-foreground">Respond within 24h to keep your score high</span>
+                  </div>
+                  {pendingRequests.map((booking) => (
+                    <PendingRequestCard
+                      key={booking.id}
+                      booking={booking}
+                      onAccept={() => handleAccept(booking.id)}
+                      onDecline={() => handleDecline(booking.id)}
+                      isActing={actingId === booking.id}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {pendingCount === 0 && (
+                <div className="bg-card border border-border rounded-2xl p-5 text-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                    <CheckCircle2 size={18} className="text-primary" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">No pending requests</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">New booking requests will appear here</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* RIGHT: today's schedule + quick navigation */}
+        <div className="flex flex-col gap-4">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-48 rounded-2xl" />
+              <Skeleton className="h-28 rounded-2xl" />
+            </>
+          ) : (
+            <>
+              {/* Today's schedule */}
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                  <p className="text-xs font-bold text-foreground uppercase tracking-wide">Today's Schedule</p>
+                  {todayBookings.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground">{todayBookings.length} job{todayBookings.length > 1 ? "s" : ""}</span>
+                  )}
+                </div>
+                {todayBookings.length === 0 ? (
+                  <div className="px-5 py-8 text-center">
+                    <Clock size={20} className="text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm font-medium text-muted-foreground">No jobs scheduled today</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {todayBookings.map((booking) => (
+                      <button
+                        key={booking.id}
+                        data-testid={`card-job-${booking.id}`}
+                        onClick={() => setLocation(`/cleaner-jobs/${booking.id}`)}
+                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors text-left"
+                      >
+                        <div className="text-center shrink-0 w-12">
+                          <p className="text-sm font-bold text-primary">{formatTime(booking.scheduledAt)}</p>
+                          <p className="text-[10px] text-muted-foreground">{formatDate(booking.scheduledAt)}</p>
+                        </div>
+                        <div className="w-px h-10 bg-border shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {SERVICE_LABELS[booking.serviceType] || booking.serviceType}
+                          </p>
+                          {booking.property?.name && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{booking.property.name}</p>
+                          )}
+                        </div>
+                        <BookingStatusPill status={booking.status} />
+                        <ChevronRight size={14} className="text-muted-foreground shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick navigation */}
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Quick Access</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Earnings", icon: TrendingUp, path: "/cleaner-dashboard/earnings", testid: "button-view-earnings" },
+                    { label: "Availability", icon: CalendarDays, path: "/cleaner-dashboard/availability", testid: "button-manage-availability" },
+                    { label: "Profile", icon: User, path: "/profile", testid: "button-view-profile" },
+                  ].map(({ label, icon: Icon, path, testid }) => (
+                    <button
+                      key={label}
+                      data-testid={testid}
+                      onClick={() => setLocation(path)}
+                      className="flex flex-col items-center gap-2 bg-muted/50 hover:bg-muted rounded-xl p-3 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Icon size={16} className="text-primary" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-foreground">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
