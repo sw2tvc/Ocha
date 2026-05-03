@@ -10,7 +10,7 @@ import { useWorkspace, Workspace, WORKSPACE_LABELS, WORKSPACE_HOME } from "@/lib
 
 type NavItem = { href: string; icon: typeof Home; label: string; alertBadge?: true };
 
-const CUSTOMER_NAV: NavItem[] = [
+const CUSTOMER_MAIN: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/bookings", icon: Calendar, label: "Bookings" },
   { href: "/notifications", icon: Bell, label: "Notifications", alertBadge: true },
@@ -21,16 +21,22 @@ const CUSTOMER_MANAGEMENT: NavItem[] = [
   { href: "/properties", icon: Building2, label: "Properties" },
 ];
 
-const CLEANER_NAV: NavItem[] = [
+const CLEANER_MAIN: NavItem[] = [
   { href: "/cleaner-dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/cleaner-dashboard/availability", icon: Clock, label: "Availability" },
   { href: "/cleaner-dashboard/earnings", icon: TrendingUp, label: "Earnings" },
+];
+
+const CLEANER_ACCOUNT: NavItem[] = [
   { href: "/notifications", icon: Bell, label: "Notifications", alertBadge: true },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
-const ADMIN_NAV: NavItem[] = [
-  { href: "/admin", icon: Shield, label: "Admin Overview" },
+const ADMIN_MAIN: NavItem[] = [
+  { href: "/admin", icon: Shield, label: "Overview" },
+];
+
+const ADMIN_ACCOUNT: NavItem[] = [
   { href: "/notifications", icon: Bell, label: "Notifications", alertBadge: true },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -116,7 +122,7 @@ export function DesktopNav() {
       <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col">
         {workspace === "customer" && (
           <>
-            {CUSTOMER_NAV.map((item) => <NavItem key={item.href} {...item} />)}
+            {CUSTOMER_MAIN.map((item) => <NavItem key={item.href} {...item} />)}
             <SectionLabel>Management</SectionLabel>
             {CUSTOMER_MANAGEMENT.map((item) => <NavItem key={item.href} {...item} />)}
           </>
@@ -124,15 +130,19 @@ export function DesktopNav() {
 
         {workspace === "cleaner" && (
           <>
-            <SectionLabel>Cleaner</SectionLabel>
-            {CLEANER_NAV.map((item) => <NavItem key={item.href} {...item} />)}
+            <SectionLabel>Work</SectionLabel>
+            {CLEANER_MAIN.map((item) => <NavItem key={item.href} {...item} />)}
+            <SectionLabel>Account</SectionLabel>
+            {CLEANER_ACCOUNT.map((item) => <NavItem key={item.href} {...item} />)}
           </>
         )}
 
         {workspace === "admin" && (
           <>
-            <SectionLabel>Admin</SectionLabel>
-            {ADMIN_NAV.map((item) => <NavItem key={item.href} {...item} />)}
+            <SectionLabel>Platform</SectionLabel>
+            {ADMIN_MAIN.map((item) => <NavItem key={item.href} {...item} />)}
+            <SectionLabel>Account</SectionLabel>
+            {ADMIN_ACCOUNT.map((item) => <NavItem key={item.href} {...item} />)}
           </>
         )}
       </nav>

@@ -1,9 +1,10 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ComponentType, ReactNode, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setDefaultHeaders } from "@workspace/api-client-react";
-import { WorkspaceProvider } from "@/lib/workspace-context";
+import { WorkspaceProvider, useWorkspace, Workspace, WORKSPACE_HOME } from "@/lib/workspace-context";
 import { BottomNav } from "@/components/bottom-nav";
 import { DesktopNav } from "@/components/desktop-nav";
 import Home from "@/pages/home";
@@ -42,35 +43,71 @@ const queryClient = new QueryClient({
   },
 });
 
+// Redirects to the user's workspace home if they land on a restricted route.
+function WorkspaceGuard({ allowed, children }: { allowed: Workspace[]; children: ReactNode }) {
+  const { workspace } = useWorkspace();
+  const [, navigate] = useLocation();
+  const isAllowed = allowed.includes(workspace);
+
+  useEffect(() => {
+    if (!isAllowed) navigate(WORKSPACE_HOME[workspace]);
+  }, [isAllowed, workspace]);
+
+  if (!isAllowed) return null;
+  return <>{children}</>;
+}
+
+function guard(allowed: Workspace[], Component: ComponentType<any>) {
+  return function Guarded(props: any) {
+    return (
+      <WorkspaceGuard allowed={allowed}>
+        <Component {...props} />
+      </WorkspaceGuard>
+    );
+  };
+}
+
+const CUSTOMER: Workspace[] = ["customer"];
+const CLEANER: Workspace[] = ["cleaner"];
+const ADMIN: Workspace[] = ["admin"];
+
 function Router() {
   return (
     <>
       <DesktopNav />
       <div className="md:ml-64">
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/cleaners" component={Cleaners} />
-          <Route path="/cleaners/:cleanerId" component={CleanerProfile} />
-          <Route path="/book" component={Book} />
-          <Route path="/bookings" component={Bookings} />
-          <Route path="/bookings/:bookingId" component={BookingDetail} />
-          <Route path="/review/:bookingId" component={Review} />
-          <Route path="/properties" component={Properties} />
-          <Route path="/properties/new" component={AddProperty} />
-          <Route path="/profile" component={Profile} />
+          {/* ── Customer / Property Manager ─────────────────────── */}
+          <Route path="/"                            component={guard(CUSTOMER, Home)} />
+          <Route path="/cleaners"                   component={guard(CUSTOMER, Cleaners)} />
+          <Route path="/cleaners/:cleanerId"        component={guard(CUSTOMER, CleanerProfile)} />
+          <Route path="/book"                       component={guard(CUSTOMER, Book)} />
+          <Route path="/bookings"                   component={guard(CUSTOMER, Bookings)} />
+          <Route path="/bookings/:bookingId"        component={guard(CUSTOMER, BookingDetail)} />
+          <Route path="/review/:bookingId"          component={guard(CUSTOMER, Review)} />
+          <Route path="/properties"                 component={guard(CUSTOMER, Properties)} />
+          <Route path="/properties/new"             component={guard(CUSTOMER, AddProperty)} />
+          <Route path="/bookings/:bookingId/dispute"  component={guard(CUSTOMER, DisputePage)} />
+          <Route path="/bookings/:bookingId/messages" component={guard(CUSTOMER, MessagesPage)} />
+          <Route path="/become-a-cleaner"           component={guard(CUSTOMER, BecomeCleaner)} />
+
+          {/* ── Cleaner ─────────────────────────────────────────── */}
+          <Route path="/cleaner-dashboard"              component={guard(CLEANER, CleanerDashboard)} />
+          <Route path="/cleaner-dashboard/availability" component={guard(CLEANER, CleanerAvailability)} />
+          <Route path="/cleaner-dashboard/earnings"     component={guard(CLEANER, CleanerEarnings)} />
+          <Route path="/cleaner-jobs/:bookingId"        component={guard(CLEANER, CleanerJobTracker)} />
+
+          {/* ── Admin ───────────────────────────────────────────── */}
+          <Route path="/admin" component={guard(ADMIN, Admin)} />
+
+          {/* ── Shared (any workspace) ──────────────────────────── */}
+          <Route path="/profile"          component={Profile} />
           <Route path="/profile/settings" component={ProfileSettings} />
-          <Route path="/notifications" component={Notifications} />
-          <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
-          <Route path="/become-a-cleaner" component={BecomeCleaner} />
-          <Route path="/bookings/:bookingId/dispute" component={DisputePage} />
-          <Route path="/cleaner-dashboard/availability" component={CleanerAvailability} />
-          <Route path="/bookings/:bookingId/messages" component={MessagesPage} />
-          <Route path="/cleaner-dashboard" component={CleanerDashboard} />
-          <Route path="/cleaner-jobs/:bookingId" component={CleanerJobTracker} />
-          <Route path="/cleaner-dashboard/earnings" component={CleanerEarnings} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/workspace" component={WorkspaceChooser} />
+          <Route path="/notifications"    component={Notifications} />
+          <Route path="/login"            component={Login} />
+          <Route path="/register"         component={Register} />
+          <Route path="/workspace"        component={WorkspaceChooser} />
+
           <Route component={NotFound} />
         </Switch>
         <BottomNav />
