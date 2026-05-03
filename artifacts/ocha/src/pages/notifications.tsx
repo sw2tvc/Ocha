@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/skeleton-loader";
 import { MOCK_NOTIFICATIONS } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkspace, WORKSPACE_HOME } from "@/lib/workspace-context";
 
 /* ── per-type config ── */
 const TYPE_CONFIG: Record<
@@ -145,6 +146,7 @@ export default function Notifications() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { workspace } = useWorkspace();
 
   const { data, isLoading, refetch } = useListNotifications(
     {},
@@ -198,7 +200,7 @@ export default function Notifications() {
           <div className="flex items-center gap-3">
             <button
               data-testid="button-back"
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation(WORKSPACE_HOME[workspace])}
               className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
             >
               <ArrowLeft size={18} />

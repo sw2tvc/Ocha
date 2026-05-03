@@ -35,7 +35,7 @@ export default function Register() {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setIsLoading(false);
-    setLocation("/");
+    setLocation("/workspace");
   };
 
   return (

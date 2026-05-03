@@ -109,6 +109,9 @@ export default function CleanerJobTracker() {
     },
   });
 
+  // Derive status before early return so mutation callbacks always have a stable value
+  const status: JobStatus = (booking?.status ?? "accepted") as JobStatus;
+
   /* Status update mutation */
   const statusMutation = useMutation({
     mutationFn: async (newStatus: JobStatus) => {
@@ -123,7 +126,7 @@ export default function CleanerJobTracker() {
     onSuccess: (_, newStatus) => {
       queryClient.invalidateQueries({ queryKey: ["cleaner-job", bookingId] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/cleaner"] });
-      const action = NEXT_ACTION[status as JobStatus];
+      const action = NEXT_ACTION[status];
       if (action) {
         toast({ title: action.toastTitle, description: action.toastDesc });
       }
@@ -168,8 +171,6 @@ export default function CleanerJobTracker() {
       </div>
     );
   }
-
-  const status: JobStatus = booking.status as JobStatus;
   const nextAction = NEXT_ACTION[status];
   const serviceLabel = SERVICE_LABELS[booking.serviceType] || booking.serviceType;
   const customerName = booking.customer?.fullName || "The customer";

@@ -248,20 +248,21 @@ export default function CleanerDashboard() {
     try { await declineMutation.mutateAsync(bookingId); } finally { setActingId(null); }
   };
 
-  const dashboard = data || {
-    isAvailable: isOnline,
-    todayBookings: [],
-    upcomingBookings: [],
-    pendingRequests: [],
-    thisWeekEarnings: 340,
-    thisMonthEarnings: 1280,
-    completedThisMonth: 16,
-    trustScore: 94,
-    averageRating: 4.9,
-    pendingReviews: 2,
-  };
+  // Extract each field defensively so a partial API response never crashes the UI
+  const d = data as any;
+  const pendingRequests: any[] = d?.pendingRequests ?? [];
+  const todayBookings: any[]   = d?.todayBookings   ?? [];
+  const pendingCount = pendingRequests.length;
 
-  const pendingCount = (dashboard.pendingRequests as any[]).length;
+  const dashboard = {
+    isAvailable:        d?.isAvailable        ?? isOnline,
+    thisWeekEarnings:   d?.thisWeekEarnings   ?? 0,
+    thisMonthEarnings:  d?.thisMonthEarnings  ?? 0,
+    completedThisMonth: d?.completedThisMonth ?? 0,
+    trustScore:         d?.trustScore         ?? 0,
+    averageRating:      d?.averageRating      ?? 0,
+    pendingReviews:     d?.pendingReviews     ?? 0,
+  };
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -329,7 +330,7 @@ export default function CleanerDashboard() {
                   </h2>
                   <span className="text-[10px] text-muted-foreground">Respond within 24h to keep your score high</span>
                 </div>
-                {(dashboard.pendingRequests as any[]).map((booking) => (
+                {pendingRequests.map((booking) => (
                   <PendingRequestCard
                     key={booking.id}
                     booking={booking}
@@ -358,8 +359,8 @@ export default function CleanerDashboard() {
               </div>
               <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
                 <Star size={13} className="text-amber-500" />
-                <span className="text-xs font-semibold">{dashboard.averageRating} avg rating</span>
-                {(dashboard.pendingReviews ?? 0) > 0 && (
+                <span className="text-xs font-semibold">{dashboard.averageRating > 0 ? `${dashboard.averageRating} avg rating` : "No ratings yet"}</span>
+                {dashboard.pendingReviews > 0 && (
                   <span className="text-xs text-primary font-medium ml-auto">
                     {dashboard.pendingReviews} pending reviews
                   </span>
@@ -368,11 +369,11 @@ export default function CleanerDashboard() {
             </div>
 
             {/* Today's jobs */}
-            {(dashboard.todayBookings as any[]).length > 0 && (
+            {todayBookings.length > 0 && (
               <div>
                 <h2 className="text-xs font-bold text-foreground uppercase tracking-wide mb-2">Today</h2>
                 <div className="flex flex-col gap-2">
-                  {(dashboard.todayBookings as any[]).map((booking) => (
+                  {todayBookings.map((booking) => (
                     <button
                       key={booking.id}
                       data-testid={`card-job-${booking.id}`}

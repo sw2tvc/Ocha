@@ -1,9 +1,10 @@
 import { useLocation } from "wouter";
-import { Shield, ShieldCheck, Phone, Mail, CreditCard, User, LogOut, ChevronRight, Star } from "lucide-react";
+import { Shield, ShieldCheck, Phone, Mail, CreditCard, User, LogOut, ChevronRight, Building2, LayoutDashboard } from "lucide-react";
 import { useGetMe, useGetMyTrustScore, getGetMeQueryKey, getGetMyTrustScoreQueryKey } from "@workspace/api-client-react";
 import { TrustBadge, TrustScoreRing } from "@/components/trust-badge";
 import { Skeleton } from "@/components/skeleton-loader";
 import { MOCK_USER, MOCK_TRUST_PROFILE } from "@/lib/mock-data";
+import { useWorkspace, Workspace, WORKSPACE_LABELS, WORKSPACE_HOME } from "@/lib/workspace-context";
 
 const VERIFICATION_STEPS = [
   { key: "emailVerified", label: "Email verified", icon: Mail, description: "Required for all users" },
@@ -14,8 +15,20 @@ const VERIFICATION_STEPS = [
   { key: "addressVerified", label: "Address verified", icon: ShieldCheck, description: "Proof of address" },
 ];
 
+const WORKSPACE_SWITCH_OPTIONS: { workspace: Workspace; icon: typeof Building2; label: string }[] = [
+  { workspace: "customer", icon: Building2, label: "Book / Property Manager" },
+  { workspace: "cleaner", icon: LayoutDashboard, label: "Work as Cleaner" },
+  { workspace: "admin", icon: Shield, label: "Admin Dashboard" },
+];
+
 export default function Profile() {
   const [, setLocation] = useLocation();
+  const { workspace, availableWorkspaces, setWorkspace } = useWorkspace();
+
+  function switchWorkspace(w: Workspace) {
+    setWorkspace(w);
+    setLocation(WORKSPACE_HOME[w]);
+  }
 
   const { data: user, isLoading: loadingUser } = useGetMe({
     query: { queryKey: getGetMeQueryKey() },
@@ -27,7 +40,7 @@ export default function Profile() {
 
   const u = user || MOCK_USER;
   const trust = trustData || MOCK_TRUST_PROFILE;
-  const verificationStatus = trust.verificationStatus;
+  const verificationStatus = trust.verificationStatus || MOCK_TRUST_PROFILE.verificationStatus;
 
   const verifiedCount = Object.values(verificationStatus).filter(Boolean).length;
   const totalSteps = Object.keys(verificationStatus).length;
@@ -152,16 +165,28 @@ export default function Profile() {
           })}
         </div>
 
-        {/* Admin link */}
-        {u.role === "admin" && (
-          <button
-            data-testid="button-admin"
-            onClick={() => setLocation("/admin")}
-            className="w-full flex items-center justify-between bg-card border border-border rounded-2xl px-4 py-3.5"
-          >
-            <span className="text-sm font-medium text-foreground">Admin Dashboard</span>
-            <ChevronRight size={14} className="text-muted-foreground" />
-          </button>
+        {/* Workspace switcher (mobile) */}
+        {availableWorkspaces.length > 1 && (
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-xs font-bold text-foreground uppercase tracking-wide">Workspace</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Currently: {WORKSPACE_LABELS[workspace]}</p>
+            </div>
+            {WORKSPACE_SWITCH_OPTIONS
+              .filter((o) => availableWorkspaces.includes(o.workspace) && o.workspace !== workspace)
+              .map(({ workspace: w, icon: Icon, label }) => (
+                <button
+                  key={w}
+                  data-testid={`button-switch-workspace-${w}`}
+                  onClick={() => switchWorkspace(w)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
+                >
+                  <Icon size={16} className="text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <ChevronRight size={14} className="text-muted-foreground ml-auto" />
+                </button>
+              ))}
+          </div>
         )}
 
         <button

@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setDefaultHeaders } from "@workspace/api-client-react";
+import { WorkspaceProvider } from "@/lib/workspace-context";
 import { BottomNav } from "@/components/bottom-nav";
+import { DesktopNav } from "@/components/desktop-nav";
 import Home from "@/pages/home";
 import Cleaners from "@/pages/cleaners";
 import CleanerProfile from "@/pages/cleaner-profile";
@@ -26,6 +28,7 @@ import CleanerDashboard from "@/pages/cleaner-dashboard";
 import CleanerJobTracker from "@/pages/cleaner-job-tracker";
 import CleanerEarnings from "@/pages/cleaner-earnings";
 import Admin from "@/pages/admin";
+import WorkspaceChooser from "@/pages/workspace-chooser";
 import NotFound from "@/pages/not-found";
 
 setDefaultHeaders({ "x-user-id": "user-demo-1" });
@@ -42,32 +45,36 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/cleaners" component={Cleaners} />
-        <Route path="/cleaners/:cleanerId" component={CleanerProfile} />
-        <Route path="/book" component={Book} />
-        <Route path="/bookings" component={Bookings} />
-        <Route path="/bookings/:bookingId" component={BookingDetail} />
-        <Route path="/review/:bookingId" component={Review} />
-        <Route path="/properties" component={Properties} />
-        <Route path="/properties/new" component={AddProperty} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/profile/settings" component={ProfileSettings} />
-        <Route path="/notifications" component={Notifications} />
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route path="/become-a-cleaner" component={BecomeCleaner} />
-        <Route path="/bookings/:bookingId/dispute" component={DisputePage} />
-        <Route path="/cleaner-dashboard/availability" component={CleanerAvailability} />
-        <Route path="/bookings/:bookingId/messages" component={MessagesPage} />
-        <Route path="/cleaner-dashboard" component={CleanerDashboard} />
-        <Route path="/cleaner-jobs/:bookingId" component={CleanerJobTracker} />
-        <Route path="/cleaner-dashboard/earnings" component={CleanerEarnings} />
-        <Route path="/admin" component={Admin} />
-        <Route component={NotFound} />
-      </Switch>
-      <BottomNav />
+      <DesktopNav />
+      <div className="md:ml-64">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/cleaners" component={Cleaners} />
+          <Route path="/cleaners/:cleanerId" component={CleanerProfile} />
+          <Route path="/book" component={Book} />
+          <Route path="/bookings" component={Bookings} />
+          <Route path="/bookings/:bookingId" component={BookingDetail} />
+          <Route path="/review/:bookingId" component={Review} />
+          <Route path="/properties" component={Properties} />
+          <Route path="/properties/new" component={AddProperty} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/profile/settings" component={ProfileSettings} />
+          <Route path="/notifications" component={Notifications} />
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route path="/become-a-cleaner" component={BecomeCleaner} />
+          <Route path="/bookings/:bookingId/dispute" component={DisputePage} />
+          <Route path="/cleaner-dashboard/availability" component={CleanerAvailability} />
+          <Route path="/bookings/:bookingId/messages" component={MessagesPage} />
+          <Route path="/cleaner-dashboard" component={CleanerDashboard} />
+          <Route path="/cleaner-jobs/:bookingId" component={CleanerJobTracker} />
+          <Route path="/cleaner-dashboard/earnings" component={CleanerEarnings} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/workspace" component={WorkspaceChooser} />
+          <Route component={NotFound} />
+        </Switch>
+        <BottomNav />
+      </div>
     </>
   );
 }
@@ -77,9 +84,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <div className="max-w-md mx-auto min-h-screen relative">
-            <Router />
-          </div>
+          <WorkspaceProvider>
+            <div className="min-h-screen relative">
+              <Router />
+            </div>
+          </WorkspaceProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>
