@@ -183,13 +183,27 @@ interface CleanerMapProps {
   cleaners: any[];
   className?: string;
   height?: number;
+  selectedCleanerId?: string;
+  onSelectCleaner?: (cleaner: any | null) => void;
 }
 
 const USER_LAT = 51.522;
 const USER_LNG = -0.075;
 
-export function CleanerMap({ cleaners, className, height = 320 }: CleanerMapProps) {
-  const [selected, setSelected] = useState<any>(null);
+export function CleanerMap({ cleaners, className, height = 320, selectedCleanerId, onSelectCleaner }: CleanerMapProps) {
+  const [internalSelected, setInternalSelected] = useState<any>(null);
+  const isControlled = onSelectCleaner !== undefined;
+  const selectedId   = isControlled ? selectedCleanerId : internalSelected?.id;
+
+  function handleSelect(cleaner: any) {
+    if (isControlled) {
+      onSelectCleaner(selectedCleanerId === cleaner.id ? null : cleaner);
+    } else {
+      setInternalSelected((prev: any) => prev?.id === cleaner.id ? null : cleaner);
+    }
+  }
+
+  const selected = cleaners.find((c) => c.id === selectedId) ?? null;
 
   const withLocation = cleaners.filter(
     (c) => c.location?.lat && c.location?.lng && c.isAvailable
@@ -242,12 +256,10 @@ export function CleanerMap({ cleaners, className, height = 320 }: CleanerMapProp
             icon={makeMarkerIcon(
               cleaner.fullName || cleaner.name || "?",
               cleaner.averageRating ?? 0,
-              selected?.id === cleaner.id
+              selectedId === cleaner.id
             )}
-            eventHandlers={{
-              click: () => setSelected((prev: any) => prev?.id === cleaner.id ? null : cleaner),
-            }}
-            zIndexOffset={selected?.id === cleaner.id ? 200 : 0}
+            eventHandlers={{ click: () => handleSelect(cleaner) }}
+            zIndexOffset={selectedId === cleaner.id ? 200 : 0}
           />
         ))}
       </MapContainer>
@@ -265,7 +277,10 @@ export function CleanerMap({ cleaners, className, height = 320 }: CleanerMapProp
 
       {/* Bottom sheet */}
       {selected && (
-        <CleanerSheet cleaner={selected} onClose={() => setSelected(null)} />
+        <CleanerSheet
+          cleaner={selected}
+          onClose={() => isControlled ? onSelectCleaner!(null) : setInternalSelected(null)}
+        />
       )}
     </div>
   );

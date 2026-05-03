@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import {
   Home, Calendar, Building2, User, Bell,
   TrendingUp, LayoutDashboard, Shield, Clock, ChevronDown,
+  CreditCard, CheckCircle2, AlertTriangle, AlertOctagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useListNotifications, getListNotificationsQueryKey } from "@workspace/api-client-react";
@@ -13,6 +14,7 @@ type NavItem = { href: string; icon: typeof Home; label: string; alertBadge?: tr
 const CUSTOMER_MAIN: NavItem[] = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/bookings", icon: Calendar, label: "Bookings" },
+  { href: "/payments", icon: CreditCard, label: "Payments" },
   { href: "/notifications", icon: Bell, label: "Notifications", alertBadge: true },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -34,6 +36,9 @@ const CLEANER_ACCOUNT: NavItem[] = [
 
 const ADMIN_MAIN: NavItem[] = [
   { href: "/admin", icon: Shield, label: "Overview" },
+  { href: "/admin?tab=verification", icon: CheckCircle2, label: "Verification" },
+  { href: "/admin?tab=disputes",     icon: AlertTriangle, label: "Disputes"     },
+  { href: "/admin?tab=risk",         icon: AlertOctagon,  label: "Risk & Fraud" },
 ];
 
 const ADMIN_ACCOUNT: NavItem[] = [
@@ -71,7 +76,8 @@ export function DesktopNav() {
   const unreadCount = data?.unreadCount ?? 0;
 
   function NavItem({ href, icon: Icon, label, alertBadge }: NavItem) {
-    const isActive = href === "/" ? location === href : location.startsWith(href);
+    const [hrefPath] = href.split("?");
+    const isActive = href === "/" ? location === href : location.startsWith(hrefPath);
     return (
       <Link href={href}>
         <button

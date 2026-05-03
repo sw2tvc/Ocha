@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useSearch, useLocation } from "wouter";
-import { Search, SlidersHorizontal, X, ChevronDown, ArrowLeft, Star, DollarSign, ShieldCheck } from "lucide-react";
+import { Search, SlidersHorizontal, X, ChevronDown, ArrowLeft, Star, ShieldCheck, Map, List } from "lucide-react";
 import { useListCleaners, getListCleanersQueryKey } from "@workspace/api-client-react";
 import { CleanerCard } from "@/components/cleaner-card";
 import { CleanerCardSkeleton } from "@/components/skeleton-loader";
 import { FilterSheet, FilterState } from "@/components/filter-sheet";
+import { CleanerMap } from "@/components/cleaner-map";
 import { MOCK_CLEANERS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +84,8 @@ export default function Cleaners() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pendingFilters, setPendingFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [desktopView, setDesktopView] = useState<"list" | "map">("list");
+  const [mapSelectedId, setMapSelectedId] = useState<string | undefined>(undefined);
 
   const activeCount = countActiveFilters(appliedFilters);
 
@@ -461,36 +464,115 @@ export default function Cleaners() {
           </div>
         </aside>
 
-        {/* RIGHT: cleaner grid */}
-        <div className="flex-1 min-w-0 px-6 pt-8 pb-8">
-          <div className="flex items-center justify-between mb-5">
+        {/* RIGHT: toggle header + content */}
+        <div className="flex-1 min-w-0 flex flex-col">
+
+          {/* Toolbar */}
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border bg-background sticky top-0 z-20">
             <h2 className="text-sm font-bold text-foreground">
               {isLoading ? "Finding cleaners…" : `${results.length} cleaner${results.length !== 1 ? "s" : ""} found`}
             </h2>
-            {activeCount > 0 && (
-              <span className="text-xs text-primary font-semibold bg-primary/10 px-3 py-1 rounded-full">
-                {activeCount} filter{activeCount > 1 ? "s" : ""} active
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {activeCount > 0 && (
+                <span className="text-xs text-primary font-semibold bg-primary/10 px-3 py-1 rounded-full">
+                  {activeCount} filter{activeCount > 1 ? "s" : ""} active
+                </span>
+              )}
+              {/* List / Map toggle */}
+              <div className="flex bg-muted rounded-lg p-0.5">
+                <button
+                  onClick={() => setDesktopView("list")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                    desktopView === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <List size={13} /> List
+                </button>
+                <button
+                  onClick={() => setDesktopView("map")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                    desktopView === "map" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Map size={13} /> Map
+                </button>
+              </div>
+            </div>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {Array(6).fill(0).map((_, i) => <CleanerCardSkeleton key={i} />)}
+          {/* ── List mode ── */}
+          {desktopView === "list" && (
+            <div className="flex-1 px-6 pt-5 pb-8">
+              {isLoading ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {Array(6).fill(0).map((_, i) => <CleanerCardSkeleton key={i} />)}
+                </div>
+              ) : results.length === 0 ? (
+                <div className="text-center py-24">
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                    <Search size={22} className="text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">No cleaners found</p>
+                  <p className="text-xs text-muted-foreground mt-1">Try adjusting the filters in the sidebar.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {results.map((cleaner) => (
+                    <CleanerCard
+                      key={cleaner.id}
+                      cleaner={cleaner as any}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : results.length === 0 ? (
-            <div className="text-center py-24">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                <Search size={22} className="text-muted-foreground" />
+          )}
+
+          {/* ── Map mode: split (map left, list right) ── */}
+          {desktopView === "map" && (
+            <div className="flex flex-1 min-h-0">
+
+              {/* Map panel */}
+              <div className="flex-1 relative">
+                <CleanerMap
+                  cleaners={results as any[]}
+                  height={window.innerHeight - 160}
+                  selectedCleanerId={mapSelectedId}
+                  onSelectCleaner={(c) => setMapSelectedId(c?.id)}
+                  className="rounded-none border-0 border-r border-border h-full"
+                />
               </div>
-              <p className="text-sm font-semibold text-foreground">No cleaners found</p>
-              <p className="text-xs text-muted-foreground mt-1">Try adjusting the filters in the sidebar.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {results.map((cleaner) => (
-                <CleanerCard key={cleaner.id} cleaner={cleaner as any} />
-              ))}
+
+              {/* Synchronized list */}
+              <div className="w-[360px] shrink-0 overflow-y-auto border-l border-border">
+                {isLoading ? (
+                  <div className="p-4 flex flex-col gap-3">
+                    {Array(4).fill(0).map((_, i) => <CleanerCardSkeleton key={i} />)}
+                  </div>
+                ) : results.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground p-6 text-center">
+                    No cleaners match your filters.
+                  </div>
+                ) : (
+                  <div className="p-3 flex flex-col gap-2">
+                    {results.map((cleaner) => (
+                      <div
+                        key={cleaner.id}
+                        onMouseEnter={() => setMapSelectedId(cleaner.id)}
+                        onMouseLeave={() => setMapSelectedId((prev) => prev === cleaner.id ? undefined : prev)}
+                        className={cn(
+                          "rounded-2xl transition-all",
+                          mapSelectedId === cleaner.id ? "ring-2 ring-primary shadow-md" : ""
+                        )}
+                      >
+                        <CleanerCard cleaner={cleaner as any} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

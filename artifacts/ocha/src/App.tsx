@@ -29,6 +29,7 @@ import CleanerDashboard from "@/pages/cleaner-dashboard";
 import CleanerJobTracker from "@/pages/cleaner-job-tracker";
 import CleanerEarnings from "@/pages/cleaner-earnings";
 import Admin from "@/pages/admin";
+import Payments from "@/pages/payments";
 import WorkspaceChooser from "@/pages/workspace-chooser";
 import NotFound from "@/pages/not-found";
 
@@ -90,6 +91,7 @@ function Router() {
           <Route path="/bookings/:bookingId/dispute"  component={guard(CUSTOMER, DisputePage)} />
           <Route path="/bookings/:bookingId/messages" component={guard(CUSTOMER, MessagesPage)} />
           <Route path="/become-a-cleaner"           component={guard(CUSTOMER, BecomeCleaner)} />
+          <Route path="/payments"                   component={guard(CUSTOMER, Payments)} />
 
           {/* ── Cleaner ─────────────────────────────────────────── */}
           <Route path="/cleaner-dashboard"              component={guard(CLEANER, CleanerDashboard)} />
